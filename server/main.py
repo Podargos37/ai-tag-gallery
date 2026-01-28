@@ -31,7 +31,7 @@ class WD14Tagger:
 
     def predict(self, image_bytes, threshold=0.2):
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        img = img.resize((1024, 1024), resample=Image.Resampling.LANCZOS)
+        img = img.resize((448, 448), resample=Image.Resampling.LANCZOS)
 
         # 배열 변환 및 차원 확장 (WD14 모델 입력 규격에 맞춤)
         img_arr = np.array(img).astype(np.float32)

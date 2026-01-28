@@ -30,8 +30,6 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
 
 # vercel
 .vercel
@@ -40,4 +38,21 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/src/generated/prisma
+
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# User Data
+public/uploads/
+public/metadata/
+
+# IDE Settings
+.idea/
+.vscode/
+*.iml
+
+# AI 모델 파일
+*.onnx
+selected_tags.csv

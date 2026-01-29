@@ -2,44 +2,37 @@
 set PROJECT_ROOT=%~dp0
 cd /d %PROJECT_ROOT%
 
-:: Node.js 설치 확인
-node -v >nul 2>&1
+echo [1/2] Checking Environments...
+
+:: Node.js가 시스템에 있는지 재확인
+where node >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Node.js is not installed!
-    echo Please install Node.js from https://nodejs.org/
+    echo [ERROR] Node.js is installed but not found in PATH.
+    echo Please restart your CMD or check your Environment Variables.
     pause
     exit /b
 )
 
-echo [1/2] Checking Python Environment and Dependencies...
-
-:: 1. 가상환경 체크 및 생성
-if not exist ".venv" (
-    echo [INFO] Creating virtual environment...
-    python -m venv .venv
+:: node_modules가 없으면 설치 (새 컴퓨터라면 필수)
+if not exist "node_modules" (
+    echo [INFO] Installing frontend dependencies...
+    call npm install
 )
 
-:: 2. 가상환경 활성화 및 라이브러리 체크
+:: Python 가상환경 및 requirements 체크
 call .venv\Scripts\activate
-python -m pip install --upgrade pip
-
-:: 3. 루트 폴더의 requirements.txt 설치 (없으면 설치 시도)
 if exist "requirements.txt" (
-    echo [INFO] Verifying libraries from requirements.txt...
     pip install -r requirements.txt
 )
 
 echo [2/2] Launching Separate Windows...
 
-:: 브라우저 열기
 start http://localhost:3000
 
-:: 1. AI 서버용 창 실행 (제목: AI_BACKEND)
+:: AI 서버 실행
 start "AI_BACKEND" cmd /k "cd /d %PROJECT_ROOT%server && ..\.venv\Scripts\activate && python main.py"
 
-:: 2. 프론트엔드용 창 실행 (제목: NEXTJS_FRONTEND)
-start "NEXTJS_FRONTEND" cmd /k "cd /d %PROJECT_ROOT% && npm run dev"
+:: 프론트엔드 실행 (call을 붙여서 npm을 실행해야 배치 파일이 끊기지 않습니다)
+start "NEXTJS_FRONTEND" cmd /k "cd /d %PROJECT_ROOT% && call npm run dev"
 
-echo All services are starting in separate windows.
-echo You can close this manager window.
-pause
+echo All systems go!

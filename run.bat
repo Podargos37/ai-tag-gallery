@@ -14,7 +14,7 @@ call .venv\Scripts\activate
 
 :: pip가 최신인지 확인하고 requirements 설치
 python -m pip install --upgrade pip
-if exist "server\requirements.txt" (
+if exist "requirements.txt" (
     pip install -r requirements.txt
 )
 

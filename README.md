@@ -125,7 +125,7 @@ ai-tag-gallery/
 ### Installation & Run
 1.  Repository 클론:
     ```bash
-    git clone [https://github.com/Podargos37/ai-tag-gallery.git](https://github.com/Podargos37/ai-tag-gallery.git)
+    git clone https://github.com/Podargos37/ai-tag-gallery.git
     cd ai-tag-gallery
     ```
 2.  의존성 설치 및 실행:

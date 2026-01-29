@@ -16,7 +16,7 @@ call .venv\Scripts\activate
 :: 이미 설치되어 있다면 "Requirement already satisfied"가 뜨며 빠르게 넘어갑니다.
 python -m pip install --upgrade pip
 if exist "server\requirements.txt" (
-    pip install -r server\requirements.txt
+    pip install -r requirements.txt
 )
 
 echo [3/3] Starting Services...

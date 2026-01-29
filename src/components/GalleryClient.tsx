@@ -1,13 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Loader2 } from "lucide-react";
+// import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, X } from "lucide-react";
 
 export default function GalleryClient({ initialImages }: { initialImages: any[] }) {
   const [search, setSearch] = useState("");
   const [filteredImages, setFilteredImages] = useState(initialImages);
   const [isSearching, setIsSearching] = useState(false);
 
+  const handleDelete = async (id: string, filename: string) => {
+    if (!confirm("이미지를 삭제하시겠습니까?")) return;
+
+    try {
+      const res = await fetch(`/api/delete?id=${id}&filename=${filename}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        // UI에서 즉시 제거
+        setFilteredImages(prev => prev.filter(img => img.id !== id));
+        alert("삭제되었습니다.");
+      } else {
+        throw new Error("Delete failed");
+      }
+    } catch (error) {
+      alert("삭제 중 오류가 발생했습니다.");
+    }
+  };
   // 검색 로직
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -83,7 +103,20 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filteredImages.map((img) => (
             <div key={img.id} className="group aspect-[3/4] bg-slate-800 rounded-2xl overflow-hidden relative border border-white/5 hover:border-indigo-500/50 transition-all duration-300">
+              {/* 삭제 버튼 추가 */}
+              <button
+                onClick={() => handleDelete(img.id, img.filename)}
+                className="absolute top-2 right-2 z-10 p-1.5 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 backdrop-blur-md"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
               <img
+                src={`/uploads/${img.filename}`}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                alt={img.originalName}
+              />
+                <img
                 src={`/uploads/${img.filename}`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 alt={img.originalName}

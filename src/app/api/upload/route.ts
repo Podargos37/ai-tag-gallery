@@ -1,3 +1,4 @@
+// src/app/api/upload/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import fs from "fs/promises";

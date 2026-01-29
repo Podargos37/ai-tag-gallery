@@ -13,7 +13,6 @@ echo [2/3] Activating environment and checking libraries...
 call .venv\Scripts\activate
 
 :: pip가 최신인지 확인하고 requirements 설치
-:: 이미 설치되어 있다면 "Requirement already satisfied"가 뜨며 빠르게 넘어갑니다.
 python -m pip install --upgrade pip
 if exist "server\requirements.txt" (
     pip install -r requirements.txt

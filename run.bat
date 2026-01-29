@@ -2,6 +2,15 @@
 set PROJECT_ROOT=%~dp0
 cd /d %PROJECT_ROOT%
 
+:: Node.js 설치 확인
+node -v >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js is not installed!
+    echo Please install Node.js from https://nodejs.org/
+    pause
+    exit /b
+)
+
 echo [1/2] Checking Python Environment and Dependencies...
 
 :: 1. 가상환경 체크 및 생성

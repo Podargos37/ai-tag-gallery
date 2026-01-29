@@ -29,7 +29,7 @@ class WD14Tagger:
         self.tag_names = self.labels["name"].tolist()
         print("Model Loaded Successfully!")
 
-    def predict(self, image_bytes, threshold=0.2):
+    def predict(self, image_bytes, threshold=0.1):
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         img = img.resize((448, 448), resample=Image.Resampling.LANCZOS)
 
@@ -45,7 +45,7 @@ class WD14Tagger:
         # 문턱값(threshold) 이상의 태그만 추출
         res = []
         for i, p in enumerate(probs):
-            if p >= threshold and i >= 9:  # 앞쪽 9개는 일반 카테고리 정보이므로 제외
+            if p >= threshold and i >= 1:  # 앞쪽 9개는 일반 카테고리 정보이므로 제외
                 res.append(self.tag_names[i].replace("_", " "))
 
         return res[:30]
@@ -89,7 +89,7 @@ async def search_semantic(req: SearchRequest):
     cos_scores = util.cos_sim(query_vec, tag_vecs)[0]
 
     # 유사도
-    match_indices = [i for i, score in enumerate(cos_scores) if score > 0.5]
+    match_indices = [i for i, score in enumerate(cos_scores) if score > 0.7]
     match_tags = [req.all_tags[i] for i in match_indices]
 
     return {"match_tags": match_tags}

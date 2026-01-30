@@ -59,7 +59,7 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
 
               {/* 이미지: object-cover로 꽉 차게 설정 */}
               <img
-                src={`/uploads/${img.filename}`}
+                src={`/thumbnails/${img.filename}`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 alt={img.originalName}
                 loading="lazy"

@@ -5,6 +5,7 @@ import fs from "fs/promises";
 import path from "path";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+const THUMB_DIR = path.join(process.cwd(), "public", "thumbnails"); // 썸네일 폴더 추가
 const METADATA_DIR = path.join(process.cwd(), "public", "metadata");
 
 export async function POST(req: NextRequest) {
@@ -14,18 +15,29 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
     // 폴더 생성 보장
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-    await fs.mkdir(METADATA_DIR, { recursive: true });
+    await Promise.all([
+      fs.mkdir(UPLOAD_DIR, { recursive: true }),
+      fs.mkdir(THUMB_DIR, { recursive: true }),
+      fs.mkdir(METADATA_DIR, { recursive: true }),
+    ]);
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileId = Date.now().toString();
     const imgFilename = `${fileId}.webp`;
     const jsonFilename = `${fileId}.json`;
 
+    // 원본 이미지 저장
     await sharp(buffer)
       .rotate()
-      .webp({ quality: 80 })
+      .webp({ quality: 90 })
       .toFile(path.join(UPLOAD_DIR, imgFilename));
+
+    // 썸네일 이미지 저장
+    await sharp(buffer)
+      .rotate()
+      .resize(400) // 가로 400px 리사이징
+      .webp({ quality: 70 })
+      .toFile(path.join(THUMB_DIR, imgFilename));
 
     let tags = ["untagged"];
     try {

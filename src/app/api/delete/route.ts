@@ -13,12 +13,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Missing ID or filename" }, { status: 400 });
     }
 
+    // 1. 경로 설정 (thumbnails 경로 추가)
     const uploadPath = path.join(process.cwd(), "public", "uploads", filename);
+    const thumbPath = path.join(process.cwd(), "public", "thumbnails", filename);
     const metadataPath = path.join(process.cwd(), "public", "metadata", `${id}.json`);
 
-    // 파일 삭제 실행 (파일이 없는 경우를 대비해 try-catch 처리)
+    // 2. 파일 삭제 실행 (thumbnails 삭제 추가)
     await Promise.all([
       fs.unlink(uploadPath).catch(() => console.warn(`File not found: ${uploadPath}`)),
+      fs.unlink(thumbPath).catch(() => console.warn(`Thumbnail not found: ${thumbPath}`)),
       fs.unlink(metadataPath).catch(() => console.warn(`Metadata not found: ${metadataPath}`))
     ]);
 

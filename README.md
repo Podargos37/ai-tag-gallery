@@ -1,89 +1,41 @@
 ![img.png](img.png)
 
 
-#  AI Semantic Tag Gallery
-
-An intelligent gallery project that automatically generates tags upon image upload and allows users to search images based on **semantic meaning**, moving beyond simple keyword matching.
+## AI Semantic Tag Gallery
+This is an intelligent gallery project that automatically generates tags upon image upload and allows for semantic-based image searching, moving beyond simple keyword matching. 
 
 ---
+## Key Features
++ Automatically extracts dozens of relevant tags from uploaded images using the wd-eva02-large-tagger-v3 model.
++ Utilizes the paraphrase-multilingual-MiniLM-L12-v2 model to calculate semantic similarity between search terms and tags, enabling results like "dog" or "cat" when searching for "animal."
++ Real-time Editing: Supports manual editing of tags and personal notes for each image.
 
-##  Key Features
-
-* **AI Auto-Tagging**: Leverages the **WD14 ViT Tagger** model to automatically extract dozens of relevant tags from uploaded images.
-* **Semantic Search**: Utilizes the `paraphrase-multilingual-MiniLM-L12-v2` model to calculate semantic similarity between search queries and tags (e.g., searching "Animal" retrieves "Dog" or "Cat").
-* **Modern Architecture**: High-performance full-stack architecture combining **Next.js 14 (App Router)** and **FastAPI**.
-* **One-Click Startup**: Provides a unified execution environment via a batch file (`.bat`) for simultaneous frontend and backend startup.
-
+---
 ## Tech Stack
+Frontend
++ Framework: Next.js 14 (App Router)
++ Styling: Tailwind CSS
++ Icons: Lucide React
 
-### Frontend
+Backend (AI Server)
++ Framework: FastAPI
 
-* **Framework**: Next.js 14 (App Router)
-* **Styling**: Tailwind CSS
-* **Icons**: Lucide React
-
-### Backend (AI Server)
-
-* **Framework**: FastAPI
-* **AI Models**:
-* **WD14 ViT Tagger**: Image Tagging logic
-* **Sentence-Transformers**: Semantic Vector Search
-
-
-* **Inference**: ONNX Runtime
+AI Models:
++ wd-eva02-large-tagger-v3 (Image Tagging)
++ Sentence-Transformers (Semantic Vector Search)
++ Inference: ONNX Runtime
 
 ---
-
-##  Getting Started
-
-### Prerequisites
-
-* **Node.js**: 18.17.0 or later
-* **Python**: 3.10 or later
-
-### Installation & Execution
-
-1. **Clone the Repository**:
-```bash
-git clone https://github.com/Podargos37/ai-tag-gallery.git
-cd ai-tag-gallery
-
-```
-
-
-2. **Run the Project**:
-* Double-click the `run.bat` file in the root directory to start both servers automatically.
-* Access the gallery at `http://localhost:3000` once the startup is complete.
-
-
+## Getting Started
+Prerequisites
++ Node.js 18+
++ Python 3.10+
 
 ---
-
-##  Project Structure
-
-```text
-ai-tag-gallery/
-├── server/              # FastAPI AI Server (Tagging & Search logic)
-├── src/
-│   ├── app/             # Next.js App Router & API Routes
-│   └── components/      # UI Components (Gallery, Upload)
-├── public/
-│   ├── uploads/         # Processed images (.webp)
-│   └── metadata/        # Image tags and info (JSON)
-└── run.bat              # Unified execution script
-
-```
-
+## AI Models Used
++ Image Tagging: WD-v3 ViT-Eva02-Large-Tagger
++ Text Embedding: paraphrase-multilingual-MiniLM-L12-v2
 ---
-
-##  How it Works
-
-1. **Image Processing**: Images are optimized and converted to `.webp` format using **Sharp** during upload.
-2. **Deep Learning Analysis**: The FastAPI server resizes images to **448x448** and performs inference using the **WD14 model** to predict tags.
-3. **Vector Similarity**: When searching, the system calculates the **Cosine Similarity** between the user's query and stored tags, enabling context-aware filtering.
-
----
-
 
 ![img.png](img.png)
 
@@ -95,10 +47,9 @@ ai-tag-gallery/
 
 ##  주요 기능
 
-* WD14 ViT Tagger 모델을 사용하여 업로드된 이미지에서 수십 개의 관련 태그를 자동으로 추출합니다. 
+* wd-eva02-large-tagger-v3 모델을 사용하여 업로드된 이미지에서 수십 개의 관련 태그를 자동으로 추출합니다. 
 * `paraphrase-multilingual-MiniLM-L12-v2` 모델을 활용하여 검색어와 태그 사이의 의미적 유사도를 계산, "동물" 검색 시 "강아지", "고양이" 등을 찾아냅니다. 
-* Next.js(App Router)와 FastAPI를 결합한 고성능 아키텍처입니다. 
-* 배치 파일(.bat)을 통한 프론트엔드/백엔드 동시 실행 환경을 제공합니다.
+* 실시간 편집: 이미지별 태그 수정 및 개인 메모 작성이 가능합니다.
 
 ##  기술 스택
 
@@ -110,7 +61,7 @@ ai-tag-gallery/
 ### Backend (AI Server)
 * **Framework**: FastAPI 
 * **AI Models**: 
-    * WD14 ViT Tagger (Image Tagging) 
+    * wd-eva02-large-tagger-v3 (Image Tagging) 
     * Sentence-Transformers (Semantic Vector Search) 
 * **Inference**: ONNX Runtime 
 
@@ -133,16 +84,8 @@ ai-tag-gallery/
     * 브라우저에서 `http://localhost:3000` 접속 확인.
 
 ---
-
-##  프로젝트 구조
-
-```text
-ai-tag-gallery/
-├── server/              # FastAPI AI Server (Tagging & Search logic)
-├── src/
-│   ├── app/             # Next.js App Router & API Routes
-│   └── components/      # UI Components (Gallery, Upload)
-├── public/
-│   ├── uploads/         # Processed images (.webp)
-│   └── metadata/        # Image tags and info (JSON)
-└── run.bat      # Unified execution script
+## 사용된 AI 모델
+1. **Image Tagging**: [WD-v3 ViT-Eva02-Large-Tagger](https://huggingface.co/SmilingWolf/wd-v3-vit-eva02-large-tagger)
+   - 이미지에서 애니메이션/일반 태그를 높은 정확도로 추출하는 최신 V3 모델입니다.
+2. **Text Embedding**: [paraphrase-multilingual-MiniLM-L12-v2](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)
+   - 50개 이상의 언어를 지원하며 검색어의 '의미'를 파악하는 Sentence-Transformers 모델입니다.

@@ -48,6 +48,7 @@ __pycache__/
 # User Data
 public/uploads/
 public/metadata/
+public/thumbnails/
 
 # IDE Settings
 .idea/

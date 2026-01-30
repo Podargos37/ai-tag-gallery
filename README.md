@@ -9,7 +9,7 @@ This is an intelligent gallery project that automatically generates tags upon im
 + Automatically extracts dozens of relevant tags from uploaded images using the wd-eva02-large-tagger-v3 model.
 + Utilizes the paraphrase-multilingual-MiniLM-L12-v2 model to calculate semantic similarity between search terms and tags, enabling results like "dog" or "cat" when searching for "animal."
 + Real-time Editing: Supports manual editing of tags and personal notes for each image.
-
++ our images are never uploaded to any server. All AI inference (tagging and semantic search) is performed entirely on your local machine.
 ---
 ## Tech Stack
 Frontend
@@ -47,7 +47,7 @@ Prerequisites
 
 ##  주요 기능
 
-* wd-eva02-large-tagger-v3 모델을 사용하여 업로드된 이미지에서 수십 개의 관련 태그를 자동으로 추출합니다. 
+* wd-eva02-large-tagger-v3 모델을 사용하여 업로드된 이미지에서 수십 개의 관련 태그를 자동으로 추출합니다. **모든 AI 연산은 로컬 환경에서 이루어지며, 사진은 어디에도 전송되지 않습니다.** 
 * `paraphrase-multilingual-MiniLM-L12-v2` 모델을 활용하여 검색어와 태그 사이의 의미적 유사도를 계산, "동물" 검색 시 "강아지", "고양이" 등을 찾아냅니다. 
 * 실시간 편집: 이미지별 태그 수정 및 개인 메모 작성이 가능합니다.
 

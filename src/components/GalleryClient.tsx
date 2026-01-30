@@ -1,15 +1,20 @@
-// src/components/GalleryClient.tsx
 "use client";
 
+import { useState } from "react";
 import { Search, Loader2, X } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useDelete } from "@/hooks/useDelete";
+import ImageModal from "./ImageModal"; // 분리한 모달 불러오기
 
 export default function GalleryClient({ initialImages }: { initialImages: any[] }) {
   const { search, setSearch, filteredImages, setFilteredImages, isSearching } = useSearch(initialImages);
   const { deleteImage } = useDelete(setFilteredImages);
 
-  const handleDeleteClick = async (id: string, filename: string) => {
+  // 모달 상태 관리
+  const [selectedImage, setSelectedImage] = useState<any | null>(null);
+
+  const handleDeleteClick = async (e: React.MouseEvent, id: string, filename: string) => {
+    e.stopPropagation(); // 카드 클릭(모달 열기) 방지
     if (!confirm("이미지를 삭제하시겠습니까?")) return;
     const success = await deleteImage(id, filename);
     if (!success) alert("삭제 중 오류가 발생했습니다.");
@@ -17,7 +22,7 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
 
   return (
     <>
-      {/* 검색창 섹션 */}
+      {/* 1. 검색창 섹션 */}
       <section className="flex flex-col items-center py-10">
         <div className="w-full max-w-2xl relative group">
           {isSearching ? (
@@ -35,7 +40,7 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
         </div>
       </section>
 
-      {/* 갤러리 그리드 섹션 */}
+      {/* 2. 갤러리 그리드 섹션 */}
       <section>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold italic uppercase tracking-wider">
@@ -47,17 +52,18 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
           {filteredImages.map((img) => (
             <div
               key={img.id}
-              className="group aspect-[3/4] bg-slate-800 rounded-2xl overflow-hidden relative border border-white/5 hover:border-indigo-500/50 transition-all duration-300 shadow-lg"
+              onClick={() => setSelectedImage(img)} // 클릭 시 모달 열기
+              className="group aspect-[3/4] bg-slate-800 rounded-2xl overflow-hidden relative border border-white/5 hover:border-indigo-500/50 transition-all duration-300 shadow-lg cursor-pointer"
             >
-              {/* 삭제 버튼: absolute와 z-index 확인 */}
+              {/* 삭제 버튼 */}
               <button
-                onClick={() => handleDeleteClick(img.id, img.filename)}
+                onClick={(e) => handleDeleteClick(e, img.id, img.filename)}
                 className="absolute top-3 right-3 z-20 p-1.5 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 backdrop-blur-md shadow-md"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              {/* 이미지: object-cover로 꽉 차게 설정 */}
+              {/* 썸네일 이미지 불러오기 */}
               <img
                 src={`/thumbnails/${img.thumbnail}`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -65,14 +71,11 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
                 loading="lazy"
               />
 
-              {/* 하단 정보 오버레이: 그라데이션 포함 */}
+              {/* 하단 정보 오버레이 */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end pointer-events-none">
                 <div className="flex flex-wrap gap-1 mb-2">
                   {img.tags && img.tags.slice(0, 5).map((t: string) => (
-                    <span
-                      key={t}
-                      className="text-[10px] bg-indigo-500/80 text-white px-1.5 py-0.5 rounded backdrop-blur-sm"
-                    >
+                    <span key={t} className="text-[10px] bg-indigo-500/80 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
                       #{t}
                     </span>
                   ))}
@@ -90,6 +93,12 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
           </div>
         )}
       </section>
+
+      {/* 3. 사진 크게 보기 모달 (독립된 컴포넌트) */}
+      <ImageModal
+        image={selectedImage}
+        onClose={() => setSelectedImage(null)}
+      />
     </>
   );
 }

@@ -9,7 +9,9 @@ export function useSearch(initialImages: any[]) {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
-      if (!search.trim()) {
+      const searchTerm = search.toLowerCase().trim(); // 검색어 소문자화 및 공백 제거
+
+      if (!searchTerm) {
         setFilteredImages(initialImages);
         return;
       }
@@ -17,17 +19,28 @@ export function useSearch(initialImages: any[]) {
       setIsSearching(true);
       try {
         const allUniqueTags = Array.from(new Set(initialImages.flatMap((img) => img.tags)));
-        const { match_tags } = await searchSemantic(search, allUniqueTags);
+        const { match_tags } = await searchSemantic(searchTerm, allUniqueTags);
 
-        const filtered = initialImages.filter((img) =>
-          img.tags.some((tag: string) => match_tags.includes(tag)) ||
-          img.originalName.toLowerCase().includes(search.toLowerCase())
-        );
+        const filtered = initialImages.filter((img) => {
+          // 1. 시맨틱 태그 매칭
+          const matchTags = img.tags.some((tag: string) => match_tags.includes(tag));
+          // 2. 파일명 매칭
+          const matchName = img.originalName.toLowerCase().includes(searchTerm);
+          // 3. 메모 내용 매칭 (새로 추가)
+          const matchNotes = img.notes && img.notes.toLowerCase().includes(searchTerm);
+
+          return matchTags || matchName || matchNotes;
+        });
         setFilteredImages(filtered);
       } catch (error) {
-        const fallback = initialImages.filter((img) =>
-          img.tags.some((tag: string) => tag.toLowerCase().includes(search.toLowerCase()))
-        );
+        // 시맨틱 검색 실패 시 일반 텍스트 매칭으로 폴백
+        const fallback = initialImages.filter((img) => {
+          const matchTags = img.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm));
+          const matchName = img.originalName.toLowerCase().includes(searchTerm);
+          const matchNotes = img.notes && img.notes.toLowerCase().includes(searchTerm);
+
+          return matchTags || matchName || matchNotes;
+        });
         setFilteredImages(fallback);
       } finally {
         setIsSearching(false);
@@ -37,6 +50,5 @@ export function useSearch(initialImages: any[]) {
     return () => clearTimeout(delayDebounceFn);
   }, [search, initialImages]);
 
-  // setFilteredImages를 반환하여 useDelete가 사용할 수 있게 합니다.
   return { search, setSearch, filteredImages, setFilteredImages, isSearching };
 }

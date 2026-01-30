@@ -1,3 +1,4 @@
+// src/app/page.tsx
 import fs from "fs/promises";
 import path from "path";
 import GalleryClient from "@/components/GalleryClient";

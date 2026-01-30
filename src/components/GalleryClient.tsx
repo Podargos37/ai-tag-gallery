@@ -1,3 +1,4 @@
+// src/components/GalleryClient.tsx
 "use client";
 
 import { Search, Loader2, X } from "lucide-react";

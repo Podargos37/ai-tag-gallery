@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File;
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-    // 폴더 생성 보장
     await Promise.all([
       fs.mkdir(UPLOAD_DIR, { recursive: true }),
       fs.mkdir(THUMB_DIR, { recursive: true }),
@@ -23,22 +22,24 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileId = Date.now().toString();
-    const imgFilename = `${fileId}.webp`;
+
+    // 1. 변수 정의: 원본 확장자 보존 및 썸네일용 webp 고정
+    const originalExt = path.extname(file.name).toLowerCase() || '.bin';
+    const imgFilename = `${fileId}${originalExt}`; // 예: 12345.png
+    const thumbFilename = `${fileId}.webp`;       // 썸네일은 항상 .webp
     const jsonFilename = `${fileId}.json`;
 
-    // 원본 이미지 저장
+    // 2. 원본 저장: 모든 메타데이터 보존 (Bypass)
+    await fs.writeFile(path.join(UPLOAD_DIR, imgFilename), buffer);
+
+    // 3. 썸네일 저장: thumbnails 폴더에 webp로 리사이징
     await sharp(buffer)
       .rotate()
-      .webp({ quality: 90 })
-      .toFile(path.join(UPLOAD_DIR, imgFilename));
+      .resize(400)
+      .webp({ quality: 75 })
+      .toFile(path.join(THUMB_DIR, thumbFilename)); // thumbFilename 사용
 
-    // 썸네일 이미지 저장
-    await sharp(buffer)
-      .rotate()
-      .resize(400) // 가로 400px 리사이징
-      .webp({ quality: 70 })
-      .toFile(path.join(THUMB_DIR, imgFilename));
-
+    // AI 태깅 로직 (기존 유지)
     let tags = ["untagged"];
     try {
       const pyFormData = new FormData();
@@ -52,10 +53,12 @@ export async function POST(req: NextRequest) {
       console.warn("AI Tagging failed");
     }
 
+    // 4. 메타데이터 생성: thumbFilename 누락 해결
     const metadata = {
       id: fileId,
       originalName: file.name,
       filename: imgFilename,
+      thumbnail: thumbFilename, // 정의된 변수 사용
       tags: tags,
       createdAt: new Date().toISOString(),
     };
@@ -67,6 +70,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, metadata });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

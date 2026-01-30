@@ -2,26 +2,21 @@
 
 import { Search, Loader2, X } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
+import { useDelete } from "@/hooks/useDelete";
 
 export default function GalleryClient({ initialImages }: { initialImages: any[] }) {
-  // 훅에서 모든 상태와 함수를 가져옵니다.
-  const { search, setSearch, filteredImages, isSearching, deleteImage } = useSearch(initialImages);
+  const { search, setSearch, filteredImages, setFilteredImages, isSearching } = useSearch(initialImages);
+  const { deleteImage } = useDelete(setFilteredImages);
 
-  // 삭제 버튼 핸들러
   const handleDeleteClick = async (id: string, filename: string) => {
     if (!confirm("이미지를 삭제하시겠습니까?")) return;
-
     const success = await deleteImage(id, filename);
-    if (success) {
-      alert("삭제되었습니다.");
-    } else {
-      alert("삭제 중 오류가 발생했습니다.");
-    }
+    if (!success) alert("삭제 중 오류가 발생했습니다.");
   };
 
   return (
     <>
-      {/* 검색 섹션 */}
+      {/* 검색창 섹션 */}
       <section className="flex flex-col items-center py-10">
         <div className="w-full max-w-2xl relative group">
           {isSearching ? (
@@ -51,17 +46,17 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
           {filteredImages.map((img) => (
             <div
               key={img.id}
-              className="group aspect-[3/4] bg-slate-800 rounded-2xl overflow-hidden relative border border-white/5 hover:border-indigo-500/50 transition-all duration-300"
+              className="group aspect-[3/4] bg-slate-800 rounded-2xl overflow-hidden relative border border-white/5 hover:border-indigo-500/50 transition-all duration-300 shadow-lg"
             >
-              {/* 삭제 버튼 */}
+              {/* 삭제 버튼: absolute와 z-index 확인 */}
               <button
                 onClick={() => handleDeleteClick(img.id, img.filename)}
-                className="absolute top-2 right-2 z-10 p-1.5 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 backdrop-blur-md"
+                className="absolute top-3 right-3 z-20 p-1.5 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 backdrop-blur-md shadow-md"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              {/* 이미지 출력 */}
+              {/* 이미지: object-cover로 꽉 차게 설정 */}
               <img
                 src={`/uploads/${img.filename}`}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -69,10 +64,10 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
                 loading="lazy"
               />
 
-              {/* 하단 정보 오버레이 */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+              {/* 하단 정보 오버레이: 그라데이션 포함 */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end pointer-events-none">
                 <div className="flex flex-wrap gap-1 mb-2">
-                  {img.tags.slice(0, 5).map((t: string) => (
+                  {img.tags && img.tags.slice(0, 5).map((t: string) => (
                     <span
                       key={t}
                       className="text-[10px] bg-indigo-500/80 text-white px-1.5 py-0.5 rounded backdrop-blur-sm"
@@ -81,15 +76,15 @@ export default function GalleryClient({ initialImages }: { initialImages: any[] 
                     </span>
                   ))}
                 </div>
-                <p className="text-xs font-medium text-white truncate">{img.originalName}</p>
+                <p className="text-[11px] font-medium text-white/90 truncate">{img.originalName}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* 결과가 없을 때 보여줄 화면 */}
+        {/* 결과 없음 표시 */}
         {filteredImages.length === 0 && !isSearching && (
-          <div className="text-center py-20 text-white/30">
+          <div className="text-center py-20 text-white/20 italic">
             검색 결과가 없습니다.
           </div>
         )}

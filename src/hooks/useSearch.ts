@@ -1,3 +1,4 @@
+// src/hooks/useSearch.ts
 import { useState, useEffect } from "react";
 import { searchSemantic } from "@/lib/api";
 
@@ -5,19 +6,6 @@ export function useSearch(initialImages: any[]) {
   const [search, setSearch] = useState("");
   const [filteredImages, setFilteredImages] = useState(initialImages);
   const [isSearching, setIsSearching] = useState(false);
-
-  const deleteImage = async (id: string, filename: string) => {
-    try {
-      const res = await fetch(`/api/delete?id=${id}&filename=${filename}`, { method: "DELETE" });
-      if (res.ok) {
-        setFilteredImages(prev => prev.filter(img => img.id !== id));
-        return true;
-      }
-    } catch (error) {
-      console.error(error);
-    }
-    return false;
-  };
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -37,7 +25,6 @@ export function useSearch(initialImages: any[]) {
         );
         setFilteredImages(filtered);
       } catch (error) {
-        // 폴백 로직
         const fallback = initialImages.filter((img) =>
           img.tags.some((tag: string) => tag.toLowerCase().includes(search.toLowerCase()))
         );
@@ -50,5 +37,6 @@ export function useSearch(initialImages: any[]) {
     return () => clearTimeout(delayDebounceFn);
   }, [search, initialImages]);
 
-  return { search, setSearch, filteredImages, isSearching, deleteImage };
+  // setFilteredImages를 반환하여 useDelete가 사용할 수 있게 합니다.
+  return { search, setSearch, filteredImages, setFilteredImages, isSearching };
 }

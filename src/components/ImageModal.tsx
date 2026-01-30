@@ -1,7 +1,7 @@
 "use client";
 
 import { X, Calendar } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MetadataSection } from "./modal/MetadataSection";
 import { TagSection } from "./modal/TagSection";
 import { NoteSection } from "./modal/NoteSection";
@@ -9,6 +9,12 @@ import { NoteSection } from "./modal/NoteSection";
 export default function ImageModal({ image, onClose }: { image: any; onClose: () => void }) {
   const [notes, setNotes] = useState(image?.notes || "");
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (image) {
+      setNotes(image.notes || ""); // 서버에서 온 최신 데이터를 input에 동기화
+    }
+  }, [image]); // image가 바뀔 때마다 실행
 
   if (!image) return null;
 

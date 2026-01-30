@@ -13,7 +13,12 @@ async function getStoredImages() {
         .filter((file) => file.endsWith(".json"))
         .map(async (file) => {
           const content = await fs.readFile(path.join(metadataDir, file), "utf-8");
-          return JSON.parse(content);
+          const data = JSON.parse(content); // 데이터를 변수에 먼저 담고
+
+          return {
+            ...data,
+            notes: data.notes || ""
+          };
         })
     );
     return images.sort((a, b) => Number(b.id) - Number(a.id));

@@ -53,14 +53,15 @@ export async function POST(req: NextRequest) {
       console.warn("AI Tagging failed");
     }
 
-    // 4. 메타데이터 생성: thumbFilename 누락 해결
+    // 4. 메타데이터 생성
     const metadata = {
       id: fileId,
       originalName: file.name,
       filename: imgFilename,
-      thumbnail: thumbFilename, // 정의된 변수 사용
+      thumbnail: thumbFilename,
       tags: tags,
       createdAt: new Date().toISOString(),
+      notes: ""
     };
 
     await fs.writeFile(

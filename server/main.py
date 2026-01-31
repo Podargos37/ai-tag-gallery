@@ -44,6 +44,9 @@ async def get_tags(file: UploadFile = File(...)):
   return {"tags": tags}
 """
 /tag라는 주소로 post 요청이 들어오면 이 함수를 실행하겠다.
+get은 주소창에 정보를 담기 때문에 용량이 큰 이미지는 body를 사용하는 POST 방식을 사용한다.
+async def로 비동기 함수라고 선언.
+tagger.predict는 tagger.py에서 만든 predict라는 사용자 정의 메서드 사용.
 """
 
 @app.post("/search_semantic")

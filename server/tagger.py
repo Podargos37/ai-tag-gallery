@@ -2,6 +2,9 @@
 import io
 import torch
 import timm
+"""
+Timm = PyTorch Image Models의 약자로
+"""
 import pandas as pd
 from PIL import Image
 from transformers import ViTImageProcessor
@@ -12,14 +15,17 @@ class WD14Eva02Tagger:
         print("Loading WD-EVA02-Large-V3...")
         self.model_id = "SmilingWolf/wd-eva02-large-tagger-v3"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        """
+        cuda를 사용할 수 있는 GPU가 있으면 cuda를 사용하고 없으면 일반 cpu를 사용하도록 설정.
+        """
 
         # 전처리기 설정
         self.processor = ViTImageProcessor(
             do_resize=True,
             size={"height": 448, "width": 448},
             do_normalize=True,
-            image_mean=[0.48145466, 0.4578275, 0.40821073],
-            image_std=[0.26862954, 0.26130258, 0.27577711]
+            image_mean=[0.48145466, 0.4578275, 0.40821073], # 학습 때 사용하는 평균 색상값
+            image_std=[0.26862954, 0.26130258, 0.27577711] # 학습 때 사용된 표준편차
         )
 
         # 모델 로드

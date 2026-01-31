@@ -60,7 +60,9 @@ async def search_semantic(req: SearchRequest):
 
   match_tags = [req.all_tags[i] for i, score in enumerate(cos_scores) if score > 0.8]
   return {"match_tags": match_tags}
-
+"""
+정확도는 0.8 이상으로 설정
+"""
 
 if __name__ == "__main__":
   import uvicorn

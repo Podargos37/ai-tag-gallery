@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import fs from "fs/promises";
 import path from "path";
+import { deleteProgress, setProgress } from "./progressStore";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const THUMB_DIR = path.join(process.cwd(), "public", "thumbnails"); // 썸네일 폴더 추가
@@ -30,6 +31,17 @@ async function mapLimit<T, R>(
 
 export async function POST(req: NextRequest) {
   try {
+    const uploadId = req.headers.get("x-upload-id") || "";
+    const hintedTotal = Number(req.headers.get("x-total-files") || "0") || 0;
+    if (uploadId) {
+      setProgress(uploadId, {
+        status: "uploading",
+        total: hintedTotal,
+        processed: 0,
+        updatedAt: Date.now(),
+      });
+    }
+
     const formData = await req.formData();
     const files = (formData.getAll("files") as File[]).filter(Boolean);
     const legacySingle = formData.get("file") as File | null;
@@ -48,6 +60,16 @@ export async function POST(req: NextRequest) {
     ]);
 
     const baseId = Date.now();
+    if (uploadId) {
+      setProgress(uploadId, {
+        status: "processing",
+        total: imageFiles.length,
+        processed: 0,
+        updatedAt: Date.now(),
+      });
+    }
+
+    let completed = 0;
     const metadataList = await mapLimit(imageFiles, 3, async (file, index) => {
       const buffer = Buffer.from(await file.arrayBuffer());
       const fileId = (baseId + index).toString();
@@ -94,8 +116,29 @@ export async function POST(req: NextRequest) {
       };
 
       await fs.writeFile(path.join(METADATA_DIR, jsonFilename), JSON.stringify(metadata, null, 2));
+
+      if (uploadId) {
+        completed += 1;
+        setProgress(uploadId, {
+          status: "processing",
+          total: imageFiles.length,
+          processed: completed,
+          updatedAt: Date.now(),
+        });
+      }
       return metadata;
     });
+
+    if (uploadId) {
+      setProgress(uploadId, {
+        status: "done",
+        total: imageFiles.length,
+        processed: imageFiles.length,
+        updatedAt: Date.now(),
+      });
+      // 클라이언트가 마지막 상태를 읽을 시간을 주고 정리
+      setTimeout(() => deleteProgress(uploadId), 30_000);
+    }
 
     return NextResponse.json({ success: true, metadata: metadataList });
   } catch (error) {

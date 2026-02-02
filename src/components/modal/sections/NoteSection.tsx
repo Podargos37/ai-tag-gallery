@@ -1,4 +1,4 @@
-// src/components/modal/NoteSection.tsx
+// src/components/modal/sections/NoteSection.tsx
 import { FileText, Save } from "lucide-react";
 
 interface NoteSectionProps {
@@ -27,8 +27,15 @@ export const NoteSection = ({ notes, setNotes, onSave, isSaving, fileId }: NoteS
         disabled={isSaving}
         className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-all"
       >
-        {isSaving ? "Saving..." : <><Save className="w-4 h-4" /> Save</>}
+        {isSaving ? (
+          "Saving..."
+        ) : (
+          <>
+            <Save className="w-4 h-4" /> Save
+          </>
+        )}
       </button>
     </div>
   </footer>
 );
+

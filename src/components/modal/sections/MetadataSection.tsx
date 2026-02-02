@@ -1,4 +1,4 @@
-// src/components/modal/MetadataSection.tsx
+// src/components/modal/sections/MetadataSection.tsx
 import { Info } from "lucide-react";
 
 export const MetadataSection = ({ id, filename }: { id: string; filename: string }) => (
@@ -13,8 +13,9 @@ export const MetadataSection = ({ id, filename }: { id: string; filename: string
       </div>
       <div className="flex justify-between">
         <span className="text-white/40">Format</span>
-        <span className="text-white/80 uppercase">{filename.split('.').pop()}</span>
+        <span className="text-white/80 uppercase">{filename.split(".").pop()}</span>
       </div>
     </div>
   </section>
 );
+

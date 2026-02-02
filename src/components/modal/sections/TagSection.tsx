@@ -1,4 +1,4 @@
-// src/components/modal/TagSection.tsx
+// src/components/modal/sections/TagSection.tsx
 import { Tag as TagIcon, X } from "lucide-react";
 import { useState } from "react";
 
@@ -34,7 +34,7 @@ export const TagSection = ({ id, tags, onTagsUpdate }: TagSectionProps) => {
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && newTag.trim()) {
+    if (e.key === "Enter" && newTag.trim()) {
       e.preventDefault();
       // 중복 태그 방지 로직 포함
       if (!tags.includes(newTag.trim())) {
@@ -53,11 +53,14 @@ export const TagSection = ({ id, tags, onTagsUpdate }: TagSectionProps) => {
       {/* 태그 리스트 */}
       <div className="flex flex-wrap gap-2 mb-4">
         {tags.map((t) => (
-          <span key={t} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 text-indigo-300 rounded-lg text-xs border border-indigo-500/20">
+          <span
+            key={t}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 text-indigo-300 rounded-lg text-xs border border-indigo-500/20"
+          >
             #{t}
             <X
               className="w-3 h-3 cursor-pointer hover:text-red-400 transition-colors"
-              onClick={() => saveTags(tags.filter(tag => tag !== t))}
+              onClick={() => saveTags(tags.filter((tag) => tag !== t))}
             />
           </span>
         ))}
@@ -75,3 +78,4 @@ export const TagSection = ({ id, tags, onTagsUpdate }: TagSectionProps) => {
     </section>
   );
 };
+

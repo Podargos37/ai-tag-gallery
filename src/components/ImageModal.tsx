@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Calendar, ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MetadataSection } from "./modal/MetadataSection";
 import { TagSection } from "./modal/TagSection";
@@ -25,6 +25,8 @@ export default function ImageModal({
   const [notes, setNotes] = useState(image?.notes || "");
   const [isSaving, setIsSaving] = useState(false);
   const [tagUpdateTick, setTagUpdateTick] = useState(0);
+  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState(false);
+  const [slideshowIntervalMs, setSlideshowIntervalMs] = useState(3000);
 
   // 이미지가 변경될 때마다(다음/이전 버튼 클릭 시) 메모 상태를 동기화합니다.
   useEffect(() => {
@@ -33,12 +35,32 @@ export default function ImageModal({
     }
   }, [image]);
 
+  // 슬라이드쇼: 일정 간격마다 다음 이미지로 이동
+  useEffect(() => {
+    if (!isSlideshowPlaying) return;
+
+    const intervalId = window.setInterval(() => {
+      if (hasNext) onNext();
+      else setIsSlideshowPlaying(false);
+    }, slideshowIntervalMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [isSlideshowPlaying, slideshowIntervalMs, hasNext, onNext]);
+
   // 키보드 화살표 이벤트를 등록합니다.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" && hasNext) onNext();
       if (e.key === "ArrowLeft" && hasPrev) onPrev();
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        setIsSlideshowPlaying(false);
+        onClose();
+      }
+      // Space로 슬라이드쇼 재생/일시정지
+      if (e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        setIsSlideshowPlaying((prev) => !prev);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -47,6 +69,11 @@ export default function ImageModal({
   }, [hasNext, hasPrev, onNext, onPrev, onClose]);
 
   if (!image) return null;
+
+  const handleClose = () => {
+    setIsSlideshowPlaying(false);
+    onClose();
+  };
 
   const handleSaveNotes = async () => {
     setIsSaving(true);
@@ -73,7 +100,7 @@ export default function ImageModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 lg:p-12" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 lg:p-12" onClick={handleClose}>
       <div className="absolute inset-0 backdrop-blur-xl animate-in fade-in duration-300" />
 
       <div
@@ -98,6 +125,35 @@ export default function ImageModal({
             alt={image.originalName}
           />
 
+          {/* 슬라이드쇼 컨트롤 */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/40 text-white px-3 py-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md">
+            <button
+              type="button"
+              onClick={() => setIsSlideshowPlaying((prev) => !prev)}
+              className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+              aria-label={isSlideshowPlaying ? "슬라이드쇼 일시정지" : "슬라이드쇼 재생"}
+              title="Space: 재생/일시정지"
+            >
+              {isSlideshowPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </button>
+
+            <div className="h-4 w-px bg-white/20" />
+
+            {[2000, 3000, 5000].map((ms) => (
+              <button
+                key={ms}
+                type="button"
+                onClick={() => setSlideshowIntervalMs(ms)}
+                className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                  slideshowIntervalMs === ms ? "bg-indigo-500/80" : "hover:bg-white/10"
+                }`}
+                aria-label={`슬라이드쇼 속도 ${ms / 1000}초`}
+              >
+                {ms / 1000}s
+              </button>
+            ))}
+          </div>
+
           {/* 다음 버튼 */}
           {hasNext && (
             <button
@@ -118,7 +174,7 @@ export default function ImageModal({
                 <Calendar className="w-3 h-3" /> {new Date(image.createdAt).toLocaleDateString()}
               </p>
             </div>
-            <button onClick={onClose} className="text-white/50 hover:text-white">
+            <button onClick={handleClose} className="text-white/50 hover:text-white">
               <X className="w-6 h-6" />
             </button>
           </header>

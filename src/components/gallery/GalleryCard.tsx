@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 
 interface GalleryCardProps {
   image: {
@@ -10,16 +10,43 @@ interface GalleryCardProps {
     originalName: string;
     tags?: string[];
   };
+  isSelected?: boolean;
   onSelect: () => void;
+  onSelectionClick?: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
 }
 
-export default function GalleryCard({ image, onSelect, onDelete }: GalleryCardProps) {
+export default function GalleryCard({
+  image,
+  isSelected = false,
+  onSelect,
+  onSelectionClick,
+  onDelete,
+}: GalleryCardProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSelectionClick?.(e);
+    } else {
+      onSelect();
+    }
+  };
+
   return (
     <div
-      onClick={onSelect}
-      className="group aspect-[3/4] bg-slate-800 rounded-2xl overflow-hidden relative border border-white/5 hover:border-indigo-500/50 transition-all duration-300 shadow-lg cursor-pointer"
+      onClick={handleClick}
+      className={`group aspect-[3/4] bg-slate-800 rounded-2xl overflow-hidden relative border transition-all duration-300 shadow-lg cursor-pointer ${
+        isSelected
+          ? "border-white ring-2 ring-white/80"
+          : "border-white/5 hover:border-indigo-500/50"
+      }`}
     >
+      {isSelected && (
+        <div className="absolute left-3 top-3 z-20 p-1.5 bg-white rounded-full text-slate-900">
+          <Check className="w-4 h-4" />
+        </div>
+      )}
       <button
         onClick={onDelete}
         className="absolute top-3 right-3 z-20 p-1.5 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 backdrop-blur-md shadow-md"

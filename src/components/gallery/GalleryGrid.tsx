@@ -13,14 +13,18 @@ interface ImageItem {
 interface GalleryGridProps {
   images: ImageItem[];
   isSearching: boolean;
+  selectedIds?: Set<string>;
   onSelectImage: (image: ImageItem) => void;
+  onCardSelectionClick?: (image: ImageItem, index: number) => void;
   onDeleteImage: (e: React.MouseEvent, id: string, filename: string) => void;
 }
 
 export default function GalleryGrid({
   images,
   isSearching,
+  selectedIds = new Set(),
   onSelectImage,
+  onCardSelectionClick,
   onDeleteImage,
 }: GalleryGridProps) {
   return (
@@ -32,11 +36,15 @@ export default function GalleryGrid({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {images.map((img) => (
+        {images.map((img, index) => (
           <GalleryCard
             key={img.id}
             image={img}
+            isSelected={selectedIds.has(img.id)}
             onSelect={() => onSelectImage(img)}
+            onSelectionClick={
+              onCardSelectionClick ? () => onCardSelectionClick(img, index) : undefined
+            }
             onDelete={(e) => onDeleteImage(e, img.id, img.filename)}
           />
         ))}

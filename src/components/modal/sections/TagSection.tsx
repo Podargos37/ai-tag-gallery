@@ -2,13 +2,14 @@ import { Tag as TagIcon, X } from "lucide-react";
 import { useState } from "react";
 import { updateTags } from "@/lib/api";
 
-interface TagSectionProps {
+export interface TagSectionProps {
   id: string;
   tags: string[];
-  onTagsUpdate: (newTags: string[]) => void;
+  /** 태그 저장 성공 시 호출. 부모는 이미지 메타 갱신(동기화)만 하면 됨 */
+  onTagsSaved: (newTags: string[]) => void;
 }
 
-export const TagSection = ({ id, tags, onTagsUpdate }: TagSectionProps) => {
+export const TagSection = ({ id, tags, onTagsSaved }: TagSectionProps) => {
   const [newTag, setNewTag] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -17,7 +18,7 @@ export const TagSection = ({ id, tags, onTagsUpdate }: TagSectionProps) => {
     try {
       const ok = await updateTags(id, updatedTags);
       if (ok) {
-        onTagsUpdate(updatedTags);
+        onTagsSaved(updatedTags);
       } else {
         alert("태그 저장에 실패했습니다.");
       }

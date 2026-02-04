@@ -2,7 +2,7 @@
 
 import { X, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
-import { updateNotes } from "@/lib/api";
+import { useUpdateNotes } from "@/hooks/useUpdateNotes";
 import { MetadataSection } from "./sections/MetadataSection";
 import { TagSection } from "./sections/TagSection";
 import { NoteSection } from "./sections/NoteSection";
@@ -15,10 +15,9 @@ export default function ImageDetailsSidebar({
   onClose: () => void;
 }) {
   const [notes, setNotes] = useState(image?.notes || "");
-  const [isSaving, setIsSaving] = useState(false);
-  const [tagUpdateTick, setTagUpdateTick] = useState(0);
+  const [metadataTick, setMetadataTick] = useState(0);
+  const { saveNotes, isSaving } = useUpdateNotes();
 
-  // 이미지가 변경될 때마다(다음/이전 버튼 클릭 시) 메모 상태를 동기화합니다.
   useEffect(() => {
     if (image) {
       setNotes(image.notes || "");
@@ -26,25 +25,19 @@ export default function ImageDetailsSidebar({
   }, [image]);
 
   const handleSaveNotes = async () => {
-    setIsSaving(true);
-    try {
-      const ok = await updateNotes(image.id, notes);
-      if (ok) {
-        image.notes = notes;
-        alert("메모가 저장되었습니다!");
-      } else {
-        alert("저장 실패");
-      }
-    } catch (e) {
+    const ok = await saveNotes(image.id, notes);
+    if (ok) {
+      image.notes = notes;
+      alert("메모가 저장되었습니다!");
+    } else {
       alert("저장 실패");
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  const handleTagsUpdate = (newTags: string[]) => {
+  /** TagSection이 API 저장 후 호출. 부모는 메타 갱신(리렌더 동기화)만 담당 */
+  const handleTagsSaved = (newTags: string[]) => {
     image.tags = newTags;
-    setTagUpdateTick((prev) => prev + 1);
+    setMetadataTick((prev) => prev + 1);
   };
 
   return (
@@ -64,7 +57,7 @@ export default function ImageDetailsSidebar({
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         <MetadataSection id={image.id} filename={image.filename} />
 
-        <TagSection id={image.id} tags={image.tags} onTagsUpdate={handleTagsUpdate} />
+        <TagSection id={image.id} tags={image.tags} onTagsSaved={handleTagsSaved} />
 
         <NoteSection
           notes={notes}

@@ -1,6 +1,6 @@
-// src/components/modal/sections/TagSection.tsx
 import { Tag as TagIcon, X } from "lucide-react";
 import { useState } from "react";
+import { updateTags } from "@/lib/api";
 
 interface TagSectionProps {
   id: string;
@@ -10,18 +10,13 @@ interface TagSectionProps {
 
 export const TagSection = ({ id, tags, onTagsUpdate }: TagSectionProps) => {
   const [newTag, setNewTag] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false); // 로딩 상태 추가
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const saveTags = async (updatedTags: string[]) => {
     setIsUpdating(true);
     try {
-      const res = await fetch("/api/update", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, tags: updatedTags }), // id와 tags를 함께 전송
-      });
-
-      if (res.ok) {
+      const ok = await updateTags(id, updatedTags);
+      if (ok) {
         onTagsUpdate(updatedTags);
       } else {
         alert("태그 저장에 실패했습니다.");

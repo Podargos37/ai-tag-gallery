@@ -2,6 +2,7 @@
 
 import { X, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
+import { updateNotes } from "@/lib/api";
 import { MetadataSection } from "./sections/MetadataSection";
 import { TagSection } from "./sections/TagSection";
 import { NoteSection } from "./sections/NoteSection";
@@ -27,14 +28,12 @@ export default function ImageDetailsSidebar({
   const handleSaveNotes = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch("/api/update", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: image.id, notes }),
-      });
-      if (res.ok) {
+      const ok = await updateNotes(image.id, notes);
+      if (ok) {
         image.notes = notes;
         alert("메모가 저장되었습니다!");
+      } else {
+        alert("저장 실패");
       }
     } catch (e) {
       alert("저장 실패");

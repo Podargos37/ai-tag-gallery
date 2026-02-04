@@ -1,4 +1,3 @@
-// src/lib/api.ts
 export async function searchSemantic(query: string, allTags: string[]) {
   const res = await fetch("/api/search", {
     method: "POST",
@@ -7,5 +6,5 @@ export async function searchSemantic(query: string, allTags: string[]) {
   });
 
   if (!res.ok) throw new Error("Search failed");
-  return res.json(); // { match_tags: [...] }
+  return res.json() as Promise<{ match_tags: string[] }>;
 }

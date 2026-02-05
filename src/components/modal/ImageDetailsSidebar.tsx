@@ -6,13 +6,21 @@ import { useUpdateNotes } from "@/hooks/useUpdateNotes";
 import { MetadataSection } from "./sections/MetadataSection";
 import { TagSection } from "./sections/TagSection";
 import { NoteSection } from "./sections/NoteSection";
+import { FolderSection } from "./sections/FolderSection";
+import type { Folder } from "@/types/folders";
 
 export default function ImageDetailsSidebar({
   image,
   onClose,
+  folders = [],
+  onAddImageToFolder,
+  onRemoveImageFromFolder,
 }: {
   image: any;
   onClose: () => void;
+  folders?: Folder[];
+  onAddImageToFolder?: (folderId: string, imageId: string) => void;
+  onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
 }) {
   const [notes, setNotes] = useState(image?.notes || "");
   const [metadataTick, setMetadataTick] = useState(0);
@@ -65,6 +73,13 @@ export default function ImageDetailsSidebar({
           onSave={handleSaveNotes}
           isSaving={isSaving}
           fileId={image.id}
+        />
+
+        <FolderSection
+          imageId={image.id}
+          folders={folders}
+          onAddImageToFolder={onAddImageToFolder}
+          onRemoveImageFromFolder={onRemoveImageFromFolder}
         />
       </div>
     </div>

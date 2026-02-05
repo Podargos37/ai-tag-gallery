@@ -39,7 +39,7 @@ export function useUpload() {
         } catch {
           // 폴링 실패 무시
         }
-        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 1000));
       }
     };
     poll();

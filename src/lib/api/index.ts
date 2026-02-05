@@ -1,6 +1,7 @@
 export { searchSemantic } from "./search";
 export { deleteImage } from "./delete";
 export { updateNotes, updateTags } from "./update";
+export { getFolders, saveFolders } from "./folders";
 export {
   getUploadProgress,
   uploadFiles,

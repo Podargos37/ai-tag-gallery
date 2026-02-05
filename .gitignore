@@ -49,6 +49,7 @@ __pycache__/
 public/uploads/
 public/metadata/
 public/thumbnails/
+data/
 
 # IDE Settings
 .idea/

@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 import ImagePane from "./modal/ImagePane";
 import ImageDetailsSidebar from "./modal/ImageDetailsSidebar";
 
-// GalleryClient에서 넘겨주는 새로운 Props들을 타입에 추가합니다.
+import type { Folder } from "@/types/folders";
+
 export default function ImageModal({
   image,
   onClose,
   onNext,
   onPrev,
   hasNext,
-  hasPrev
+  hasPrev,
+  folders = [],
+  onAddImageToFolder,
+  onRemoveImageFromFolder,
 }: {
   image: any;
   onClose: () => void;
@@ -19,6 +23,9 @@ export default function ImageModal({
   onPrev: () => void;
   hasNext: boolean;
   hasPrev: boolean;
+  folders?: Folder[];
+  onAddImageToFolder?: (folderId: string, imageId: string) => void;
+  onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
 }) {
   const [isSlideshowPlaying, setIsSlideshowPlaying] = useState(false);
   const [slideshowIntervalMs, setSlideshowIntervalMs] = useState(3000);
@@ -83,7 +90,13 @@ export default function ImageModal({
           onSlideshowIntervalChange={setSlideshowIntervalMs}
         />
 
-        <ImageDetailsSidebar image={image} onClose={handleClose} />
+        <ImageDetailsSidebar
+          image={image}
+          onClose={handleClose}
+          folders={folders}
+          onAddImageToFolder={onAddImageToFolder}
+          onRemoveImageFromFolder={onRemoveImageFromFolder}
+        />
       </div>
     </div>
   );

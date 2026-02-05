@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import ImagePane from "./modal/ImagePane";
 import ImageDetailsSidebar from "./modal/ImageDetailsSidebar";
 
@@ -29,6 +29,26 @@ export default function ImageModal({
 }) {
   const [isSlideshowPlaying, setIsSlideshowPlaying] = useState(false);
   const [slideshowIntervalMs, setSlideshowIntervalMs] = useState(3000);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = modalRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      el.requestFullscreen?.();
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
 
   // 슬라이드쇼: 일정 간격마다 다음 이미지로 이동
   useEffect(() => {
@@ -42,16 +62,19 @@ export default function ImageModal({
     return () => window.clearInterval(intervalId);
   }, [isSlideshowPlaying, slideshowIntervalMs, hasNext, onNext]);
 
-  // 키보드 화살표 이벤트를 등록합니다.
+  // 키보드: 화살표, Space, Escape(전체화면이면 해제만, 아니면 모달 닫기)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" && hasNext) onNext();
       if (e.key === "ArrowLeft" && hasPrev) onPrev();
       if (e.key === "Escape") {
-        setIsSlideshowPlaying(false);
-        onClose();
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          setIsSlideshowPlaying(false);
+          onClose();
+        }
       }
-      // Space로 슬라이드쇼 재생/일시정지
       if (e.key === " " || e.key === "Spacebar") {
         e.preventDefault();
         setIsSlideshowPlaying((prev) => !prev);
@@ -59,7 +82,6 @@ export default function ImageModal({
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    // 모달이 닫힐 때 이벤트 리스너를 제거하여 메모리 누수를 방지합니다.
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [hasNext, hasPrev, onNext, onPrev, onClose]);
 
@@ -75,7 +97,10 @@ export default function ImageModal({
       <div className="absolute inset-0 backdrop-blur-xl animate-in fade-in duration-300" />
 
       <div
-        className="relative w-full max-w-6xl h-full max-h-[85vh] bg-slate-900/90 rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex flex-col md:flex-row"
+        ref={modalRef}
+        className={`relative w-full max-w-6xl h-full max-h-[85vh] bg-slate-900/90 rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex flex-col md:flex-row transition-[max-width,max-height,border-radius] ${
+          isFullscreen ? "!max-w-none !max-h-none !rounded-none w-full h-full" : ""
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <ImagePane
@@ -88,15 +113,19 @@ export default function ImageModal({
           onToggleSlideshow={() => setIsSlideshowPlaying((prev) => !prev)}
           slideshowIntervalMs={slideshowIntervalMs}
           onSlideshowIntervalChange={setSlideshowIntervalMs}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
         />
 
-        <ImageDetailsSidebar
-          image={image}
-          onClose={handleClose}
-          folders={folders}
-          onAddImageToFolder={onAddImageToFolder}
-          onRemoveImageFromFolder={onRemoveImageFromFolder}
-        />
+        {!isFullscreen && (
+          <ImageDetailsSidebar
+            image={image}
+            onClose={handleClose}
+            folders={folders}
+            onAddImageToFolder={onAddImageToFolder}
+            onRemoveImageFromFolder={onRemoveImageFromFolder}
+          />
+        )}
       </div>
     </div>
   );

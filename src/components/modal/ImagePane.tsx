@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Pause, Maximize2, Minimize2 } from "lucide-react";
 
 export default function ImagePane({
   image,
@@ -12,6 +12,8 @@ export default function ImagePane({
   onToggleSlideshow,
   slideshowIntervalMs,
   onSlideshowIntervalChange,
+  isFullscreen,
+  onToggleFullscreen,
 }: {
   image: any;
   onNext: () => void;
@@ -22,6 +24,8 @@ export default function ImagePane({
   onToggleSlideshow: () => void;
   slideshowIntervalMs: number;
   onSlideshowIntervalChange: (ms: number) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }) {
   return (
     <div className="flex-1 flex items-center justify-center bg-black/20 relative group">
@@ -41,8 +45,23 @@ export default function ImagePane({
         alt={image.originalName}
       />
 
-      {/* 슬라이드쇼 컨트롤 */}
+      {/* 슬라이드쇼 + 전체화면 컨트롤 (호버 시 표시) */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/40 text-white px-3 py-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-md">
+        {onToggleFullscreen && (
+          <>
+            <button
+              type="button"
+              onClick={onToggleFullscreen}
+              className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+              aria-label={isFullscreen ? "전체화면 나가기" : "전체화면"}
+              title={isFullscreen ? "전체화면 나가기 (Esc)" : "전체화면"}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+            <div className="h-4 w-px bg-white/20" />
+          </>
+        )}
+
         <button
           type="button"
           onClick={onToggleSlideshow}

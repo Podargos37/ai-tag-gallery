@@ -1,6 +1,9 @@
 "use client";
 
+import Masonry from "react-masonry-css";
 import GalleryCard from "./GalleryCard";
+
+const MASONRY_BREAKPOINTS = { default: 5, 1280: 4, 1024: 3, 768: 2 };
 
 interface ImageItem {
   id: string;
@@ -8,6 +11,8 @@ interface ImageItem {
   thumbnail: string;
   originalName: string;
   tags?: string[];
+  width?: number;
+  height?: number;
 }
 
 interface GalleryGridProps {
@@ -35,20 +40,25 @@ export default function GalleryGrid({
         </h2>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      <Masonry
+        breakpointCols={MASONRY_BREAKPOINTS}
+        className="flex w-full -ml-6"
+        columnClassName="pl-6 bg-clip-padding"
+      >
         {images.map((img, index) => (
-          <GalleryCard
-            key={img.id}
-            image={img}
-            isSelected={selectedIds.has(img.id)}
-            onSelect={() => onSelectImage(img)}
-            onSelectionClick={
-              onCardSelectionClick ? () => onCardSelectionClick(img, index) : undefined
-            }
-            onDelete={(e) => onDeleteImage(e, img.id, img.filename)}
-          />
+          <div key={img.id} className="mb-6">
+            <GalleryCard
+              image={img}
+              isSelected={selectedIds.has(img.id)}
+              onSelect={() => onSelectImage(img)}
+              onSelectionClick={
+                onCardSelectionClick ? () => onCardSelectionClick(img, index) : undefined
+              }
+              onDelete={(e) => onDeleteImage(e, img.id, img.filename)}
+            />
+          </div>
         ))}
-      </div>
+      </Masonry>
 
       {images.length === 0 && !isSearching && (
         <div className="text-center py-20 text-white/20 italic">검색 결과가 없습니다.</div>

@@ -73,6 +73,13 @@ Prerequisites
 * Node.js 18+
 * Python 3.10+
 
+### 기존 이미지 비율 보정 (선택)
+* 과거에 업로드한 이미지는 메타데이터에 width/height가 없어 갤러리에서 3:4 비율로 보일 수 있습니다.
+* 한 번만 실행하면 `public/metadata`에 원본 비율이 채워집니다. (다른 사람이 클론한 뒤에도 각자 한 번씩 실행하면 됩니다.)
+  ```bash
+  npm run backfill-dimensions
+  ```
+
 ### Installation & Run
 1.  Repository 클론:
     ```bash

@@ -83,12 +83,13 @@ export async function POST(req: NextRequest) {
       // 2. 원본 저장: 모든 메타데이터 보존 (Bypass)
       await fs.writeFile(path.join(UPLOAD_DIR, imgFilename), buffer);
 
-      // 3. 썸네일 저장: thumbnails 폴더에 webp로 리사이징
+      // 3. 원본 크기 추출(EXIF 회전 반영) 및 썸네일 저장 (비율 유지 리사이즈)
+      const { width: origWidth, height: origHeight } = await sharp(buffer).rotate().metadata();
       await sharp(buffer)
         .rotate()
         .resize(400)
         .webp({ quality: 75 })
-        .toFile(path.join(THUMB_DIR, thumbFilename)); // thumbFilename 사용
+        .toFile(path.join(THUMB_DIR, thumbFilename));
 
       // AI 태깅 로직 (기존 유지)
       let tags = ["untagged"];
@@ -104,12 +105,14 @@ export async function POST(req: NextRequest) {
         console.warn("AI Tagging failed");
       }
 
-      // 4. 메타데이터 생성
+      // 4. 메타데이터 생성 (원본 width/height로 갤러리 비율 표시용)
       const metadata = {
         id: fileId,
         originalName: file.name,
         filename: imgFilename,
         thumbnail: thumbFilename,
+        width: typeof origWidth === "number" ? origWidth : undefined,
+        height: typeof origHeight === "number" ? origHeight : undefined,
         tags: tags,
         createdAt: new Date().toISOString(),
         notes: "",

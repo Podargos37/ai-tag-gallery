@@ -1,9 +1,10 @@
 "use client";
 
-import Masonry from "react-masonry-css";
 import GalleryCard from "./GalleryCard";
+import VirtualMasonryView from "./VirtualMasonryView";
 import type { ImageItem } from "@/types/gallery";
-import { MASONRY_BREAKPOINTS } from "@/constants/gallery";
+import { useColumnCount } from "@/hooks/useColumnCount";
+import { useVirtualMasonry } from "@/hooks/useVirtualMasonry";
 
 interface GalleryGridProps {
   images: ImageItem[];
@@ -22,37 +23,56 @@ export default function GalleryGrid({
   onCardSelectionClick,
   onDeleteImage,
 }: GalleryGridProps) {
+  const columnCount = useColumnCount();
+  const { containerRef, totalHeight, visibleCells } = useVirtualMasonry({
+    images,
+    columnCount,
+  });
+
+  if (images.length === 0 && !isSearching) {
+    return (
+      <section>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold italic uppercase tracking-wider">
+            Gallery <span className="text-indigo-500 ml-2 text-sm">(0)</span>
+          </h2>
+        </div>
+        <div className="text-center py-20 text-white/20 italic">
+          검색 결과가 없습니다.
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold italic uppercase tracking-wider">
-          Gallery <span className="text-indigo-500 ml-2 text-sm">({images.length})</span>
+          Gallery{" "}
+          <span className="text-indigo-500 ml-2 text-sm">({images.length})</span>
         </h2>
       </div>
 
-      <Masonry
-        breakpointCols={MASONRY_BREAKPOINTS}
-        className="flex w-full -ml-6"
-        columnClassName="pl-6 bg-clip-padding"
-      >
-        {images.map((img, index) => (
-          <div key={img.id} className="mb-6">
-            <GalleryCard
-              image={img}
-              isSelected={selectedIds.has(img.id)}
-              onSelect={() => onSelectImage(img)}
-              onSelectionClick={
-                onCardSelectionClick ? () => onCardSelectionClick(img, index) : undefined
-              }
-              onDelete={(e) => onDeleteImage(e, img.id, img.filename)}
-            />
-          </div>
-        ))}
-      </Masonry>
-
-      {images.length === 0 && !isSearching && (
-        <div className="text-center py-20 text-white/20 italic">검색 결과가 없습니다.</div>
-      )}
+      <VirtualMasonryView
+        containerRef={containerRef}
+        totalHeight={totalHeight}
+        visibleCells={visibleCells}
+        renderCell={(cell) => (
+          <GalleryCard
+            image={cell.image}
+            isSelected={selectedIds.has(cell.image.id)}
+            onSelect={() => onSelectImage(cell.image)}
+            onSelectionClick={
+              onCardSelectionClick
+                ? () => onCardSelectionClick(cell.image, cell.index)
+                : undefined
+            }
+            onDelete={(e) =>
+              onDeleteImage(e, cell.image.id, cell.image.filename)
+            }
+          />
+        )}
+      />
     </section>
   );
 }

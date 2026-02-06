@@ -5,6 +5,7 @@ import ImagePane from "./modal/ImagePane";
 import ImageDetailsSidebar from "./modal/ImageDetailsSidebar";
 
 import type { Folder } from "@/types/folders";
+import type { ImageItem } from "@/types/gallery";
 
 export default function ImageModal({
   image,
@@ -17,7 +18,7 @@ export default function ImageModal({
   onAddImageToFolder,
   onRemoveImageFromFolder,
 }: {
-  image: any;
+  image: ImageItem;
   onClose: () => void;
   onNext: () => void;
   onPrev: () => void;

@@ -2,18 +2,8 @@
 
 import Masonry from "react-masonry-css";
 import GalleryCard from "./GalleryCard";
-
-const MASONRY_BREAKPOINTS = { default: 5, 1280: 4, 1024: 3, 768: 2 };
-
-interface ImageItem {
-  id: string;
-  filename: string;
-  thumbnail: string;
-  originalName: string;
-  tags?: string[];
-  width?: number;
-  height?: number;
-}
+import type { ImageItem } from "@/types/gallery";
+import { MASONRY_BREAKPOINTS } from "@/constants/gallery";
 
 interface GalleryGridProps {
   images: ImageItem[];

@@ -7,13 +7,12 @@ import { useGallerySelection } from "@/hooks/useGallerySelection";
 import { useBulkTag } from "@/hooks/useBulkTag";
 import { useFolders } from "@/hooks/useFolders";
 import ImageModal from "./ImageModal";
-import SearchBar from "./gallery/SearchBar";
-import GalleryGrid from "./gallery/GalleryGrid";
-import BulkTagBar from "./gallery/BulkTagBar";
+import { BulkTagBar, GalleryGrid, SearchBar } from "./gallery";
 import FolderSidebar from "./sidebar/FolderSidebar";
+import type { ImageItem } from "@/types/gallery";
 
-export default function GalleryClient({ initialImages }: { initialImages: any[] }) {
-  const [images, setImages] = useState(initialImages);
+export default function GalleryClient({ initialImages }: { initialImages: ImageItem[] }) {
+  const [images, setImages] = useState<ImageItem[]>(initialImages);
   const {
     folders,
     selectedFolderId,

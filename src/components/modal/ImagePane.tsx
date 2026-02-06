@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Play, Pause, Maximize2, Minimize2 } from "lucide-react";
+import type { ImageItem } from "@/types/gallery";
 
 export default function ImagePane({
   image,
@@ -15,7 +16,7 @@ export default function ImagePane({
   isFullscreen,
   onToggleFullscreen,
 }: {
-  image: any;
+  image: ImageItem;
   onNext: () => void;
   onPrev: () => void;
   hasNext: boolean;

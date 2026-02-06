@@ -1,13 +1,14 @@
 import { useState, useRef } from "react";
 import { updateTags } from "@/lib/api/update";
+import type { ImageItem } from "@/types/gallery";
 
 type ClearSelectionFn = () => void;
 
 export function useBulkTag(
   selectedIds: Set<string>,
-  filteredImages: any[],
-  setImages: React.Dispatch<React.SetStateAction<any[]>>,
-  setSelectedImage: React.Dispatch<React.SetStateAction<any | null>>,
+  filteredImages: ImageItem[],
+  setImages: React.Dispatch<React.SetStateAction<ImageItem[]>>,
+  setSelectedImage: React.Dispatch<React.SetStateAction<ImageItem | null>>,
   clearSelection: ClearSelectionFn
 ) {
   const [showBulkTagInput, setShowBulkTagInput] = useState(false);

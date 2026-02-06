@@ -1,12 +1,13 @@
 import { useState } from "react";
+import type { ImageItem } from "@/types/gallery";
 
-export function useGallerySelection(filteredImages: any[]) {
-  const [selectedImage, setSelectedImage] = useState<any | null>(null);
+export function useGallerySelection(filteredImages: ImageItem[]) {
+  const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastClickedIndex, setLastClickedIndex] = useState<number>(-1);
 
   const currentIndex = selectedImage
-    ? filteredImages.findIndex((img: any) => img.id === selectedImage.id)
+    ? filteredImages.findIndex((img) => img.id === selectedImage.id)
     : -1;
 
   const handleNavigate = (direction: "prev" | "next") => {
@@ -17,7 +18,7 @@ export function useGallerySelection(filteredImages: any[]) {
     }
   };
 
-  const handleCardSelectionClick = (image: any, index: number) => {
+  const handleCardSelectionClick = (image: ImageItem, index: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(image.id)) {
@@ -30,7 +31,7 @@ export function useGallerySelection(filteredImages: any[]) {
       }
       const from = Math.min(lastClickedIndex, index);
       const to = Math.max(lastClickedIndex, index);
-      filteredImages.slice(from, to + 1).forEach((img: any) => next.add(img.id));
+      filteredImages.slice(from, to + 1).forEach((img) => next.add(img.id));
       return next;
     });
     setLastClickedIndex(index);

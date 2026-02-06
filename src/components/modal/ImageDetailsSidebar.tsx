@@ -8,6 +8,7 @@ import { TagSection } from "./sections/TagSection";
 import { NoteSection } from "./sections/NoteSection";
 import { FolderSection } from "./sections/FolderSection";
 import type { Folder } from "@/types/folders";
+import type { ImageItem } from "@/types/gallery";
 
 export default function ImageDetailsSidebar({
   image,
@@ -16,7 +17,7 @@ export default function ImageDetailsSidebar({
   onAddImageToFolder,
   onRemoveImageFromFolder,
 }: {
-  image: any;
+  image: ImageItem;
   onClose: () => void;
   folders?: Folder[];
   onAddImageToFolder?: (folderId: string, imageId: string) => void;

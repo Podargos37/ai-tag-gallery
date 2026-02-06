@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import type { ImageItem } from "@/types/gallery";
 
 const METADATA_DIR = path.join(process.cwd(), "public", "metadata");
 
@@ -7,7 +8,7 @@ const METADATA_DIR = path.join(process.cwd(), "public", "metadata");
  * 서버에 저장된 이미지 메타데이터(JSON) 목록을 읽어옵니다.
  * public/metadata/*.json 을 읽어 notes 기본값을 보정한 뒤, id 기준 최신순으로 정렬해 반환합니다.
  */
-export async function getImageMetadataList() {
+export async function getImageMetadataList(): Promise<ImageItem[]> {
   try {
     await fs.mkdir(METADATA_DIR, { recursive: true });
     const files = await fs.readdir(METADATA_DIR);

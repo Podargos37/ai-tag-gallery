@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { Menu } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useDelete } from "@/hooks/useDelete";
 import { useGallerySelection } from "@/hooks/useGallerySelection";
@@ -13,6 +14,7 @@ import type { ImageItem } from "@/types/gallery";
 
 export default function GalleryClient({ initialImages }: { initialImages: ImageItem[] }) {
   const [images, setImages] = useState<ImageItem[]>(initialImages);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const {
     folders,
     selectedFolderId,
@@ -66,19 +68,51 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
 
   return (
     <div className="flex gap-6 w-full min-h-[calc(100vh-6rem)]">
-      <FolderSidebar
-        folders={folders}
-        selectedFolderId={selectedFolderId}
-        onSelectFolder={setSelectedFolderId}
-        onAddFolder={addFolder}
-        onDeleteFolder={deleteFolder}
-        loading={foldersLoading}
-      />
+      {/* 데스크톱: 항상 보이는 사이드바 */}
+      <div className="hidden md:flex shrink-0">
+        <FolderSidebar
+          folders={folders}
+          selectedFolderId={selectedFolderId}
+          onSelectFolder={setSelectedFolderId}
+          onAddFolder={addFolder}
+          onDeleteFolder={deleteFolder}
+          loading={foldersLoading}
+        />
+      </div>
+
+      {/* 모바일: 메뉴 버튼으로 열리는 드로어 */}
+      {mobileSidebarOpen && (
+        <FolderSidebar
+          variant="overlay"
+          folders={folders}
+          selectedFolderId={selectedFolderId}
+          onSelectFolder={(id) => {
+            setSelectedFolderId(id);
+            setMobileSidebarOpen(false);
+          }}
+          onAddFolder={addFolder}
+          onDeleteFolder={deleteFolder}
+          loading={foldersLoading}
+          onClose={() => setMobileSidebarOpen(false)}
+        />
+      )}
 
       {/* 갤러리 영역만 기존처럼 max-w-7xl 유지, 사이드바는 왼쪽 여백에 위치 */}
       <div className="flex-1 min-w-0 flex justify-center">
         <div className="w-full max-w-7xl space-y-8">
-          <SearchBar value={search} onChange={setSearch} isSearching={isSearching} />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition shrink-0"
+              aria-label="폴더 메뉴 열기"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <SearchBar value={search} onChange={setSearch} isSearching={isSearching} />
+            </div>
+          </div>
 
           {selectedIds.size > 0 && (
             <BulkTagBar

@@ -1,14 +1,16 @@
 # server/main.py
 # 백그라운드가 돌아가는 메인 서버
+import threading
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, util
 from tagger import WD14Eva02Tagger
+from tunnel import start_tunnel, get_tunnel_url
 
 app = FastAPI()
 # CORS(Cross-Origin Resource Sharing) 설정
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_methods=["POST", "OPTIONS"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_methods=["*"], allow_headers=["*"])
 """
 allow_origins,누가? - "요청을 보내는 웹사이트 주소를 제한한다."
   + localhost:3000은 next.js의 기본 로컬 개발 프론트
@@ -64,7 +66,17 @@ async def search_semantic(req: SearchRequest):
 정확도는 0.8 이상으로 설정
 """
 
+
+@app.get("/tunnel-url")
+def tunnel_url():
+  """모바일 접속용 퀵 터널 URL. 없으면 null."""
+  url = get_tunnel_url()
+  return {"url": url}
+
+
 if __name__ == "__main__":
   import uvicorn
 
+  # Next.js(3000)로 퀵 터널 연결 → 폰에서 같은 갤러리 접속 가능
+  threading.Thread(target=lambda: start_tunnel("http://localhost:3000"), daemon=True).start()
   uvicorn.run(app, host="0.0.0.0", port=8000)

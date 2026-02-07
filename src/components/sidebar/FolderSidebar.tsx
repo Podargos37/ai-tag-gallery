@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FolderOpen, Folder, Plus, Trash2, Loader2 } from "lucide-react";
+import { FolderOpen, Folder, Plus, Trash2, Loader2, X } from "lucide-react";
 import type { Folder as FolderType } from "@/types/folders";
 
 interface FolderSidebarProps {
@@ -11,6 +11,9 @@ interface FolderSidebarProps {
   onAddFolder: (name: string) => void;
   onDeleteFolder: (id: string) => void;
   loading?: boolean;
+  /** 모바일 드로어로 띄울 때 true → 배경+닫기 버튼 */
+  variant?: "inline" | "overlay";
+  onClose?: () => void;
 }
 
 export default function FolderSidebar({
@@ -20,6 +23,8 @@ export default function FolderSidebar({
   onAddFolder,
   onDeleteFolder,
   loading = false,
+  variant = "inline",
+  onClose,
 }: FolderSidebarProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -33,12 +38,28 @@ export default function FolderSidebar({
     }
   };
 
-  return (
-    <aside className="w-56 shrink-0 flex flex-col border-r border-white/10 bg-slate-900/50 rounded-xl overflow-hidden">
-      <div className="p-3 border-b border-white/10">
+  const isOverlay = variant === "overlay";
+
+  const panel = (
+    <aside
+      className={`flex flex-col border-r border-white/10 bg-slate-900/50 overflow-hidden ${
+        isOverlay ? "w-72 max-w-[85vw] h-full rounded-r-xl shadow-xl" : "w-56 shrink-0 rounded-xl"
+      }`}
+    >
+      <div className="p-3 border-b border-white/10 flex items-center justify-between">
         <h2 className="text-xs font-semibold text-white/60 uppercase tracking-wider px-2 py-1">
           폴더
         </h2>
+        {isOverlay && onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition"
+            aria-label="사이드바 닫기"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 py-2">
@@ -137,4 +158,19 @@ export default function FolderSidebar({
       </div>
     </aside>
   );
+
+  if (isOverlay) {
+    return (
+      <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="폴더">
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/60"
+          onClick={onClose}
+          aria-label="닫기"
+        />
+        <div className="relative">{panel}</div>
+      </div>
+    );
+  }
+  return panel;
 }

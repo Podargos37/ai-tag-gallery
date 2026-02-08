@@ -1,15 +1,11 @@
 "use client";
 
 import { X, Check } from "lucide-react";
+import type { ImageItem } from "@/types/gallery";
+import { DEFAULT_ASPECT_RATIO } from "@/constants/gallery";
 
 interface GalleryCardProps {
-  image: {
-    id: string;
-    filename: string;
-    thumbnail: string;
-    originalName: string;
-    tags?: string[];
-  };
+  image: ImageItem;
   isSelected?: boolean;
   onSelect: () => void;
   onSelectionClick?: (e: React.MouseEvent) => void;
@@ -33,10 +29,16 @@ export default function GalleryCard({
     }
   };
 
+  const aspectRatio =
+    image.width != null && image.height != null && image.height > 0
+      ? `${image.width}/${image.height}`
+      : DEFAULT_ASPECT_RATIO;
+
   return (
     <div
       onClick={handleClick}
-      className={`group aspect-[3/4] bg-slate-800 rounded-2xl overflow-hidden relative border transition-all duration-300 shadow-lg cursor-pointer ${
+      style={{ aspectRatio }}
+      className={`group w-full bg-slate-800 rounded-2xl overflow-hidden relative border transition-all duration-300 shadow-lg cursor-pointer ${
         isSelected
           ? "border-white ring-2 ring-white/80"
           : "border-white/5 hover:border-indigo-500/50"
@@ -56,7 +58,7 @@ export default function GalleryCard({
 
       <img
         src={`/thumbnails/${image.thumbnail}`}
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
         alt={image.originalName}
         loading="lazy"
       />

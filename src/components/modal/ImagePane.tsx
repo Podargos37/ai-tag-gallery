@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Play, Pause, Maximize2, Minimize2 } from "lucide-react";
+import type { ImageItem } from "@/types/gallery";
 
 export default function ImagePane({
   image,
@@ -15,7 +16,7 @@ export default function ImagePane({
   isFullscreen,
   onToggleFullscreen,
 }: {
-  image: any;
+  image: ImageItem;
   onNext: () => void;
   onPrev: () => void;
   hasNext: boolean;
@@ -28,7 +29,7 @@ export default function ImagePane({
   onToggleFullscreen?: () => void;
 }) {
   return (
-    <div className="flex-1 flex items-center justify-center bg-black/20 relative group">
+    <div className="flex-1 min-h-0 flex items-center justify-center bg-black/20 relative group">
       {/* 이전 버튼 */}
       {hasPrev && (
         <button

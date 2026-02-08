@@ -29,7 +29,7 @@ export default function ImagePane({
   onToggleFullscreen?: () => void;
 }) {
   return (
-    <div className="flex-1 flex items-center justify-center bg-black/20 relative group">
+    <div className="flex-1 min-h-0 flex items-center justify-center bg-black/20 relative group">
       {/* 이전 버튼 */}
       {hasPrev && (
         <button

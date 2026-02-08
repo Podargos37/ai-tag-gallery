@@ -13,11 +13,9 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: node_modules가 없으면 설치 (새 컴퓨터라면 필수)
-if not exist "node_modules" (
-    echo [INFO] Installing frontend dependencies...
-    call npm install
-)
+:: 프론트엔드 의존성 동기화 (없으면 설치, 있으면 빠르게 확인만 — pull 후 새 패키지도 자동 반영)
+echo [INFO] Syncing frontend dependencies...
+call npm install
 
 :: Python 가상환경 및 requirements 체크
 call .venv\Scripts\activate

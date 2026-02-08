@@ -9,7 +9,7 @@ import { useBulkTag } from "@/hooks/useBulkTag";
 import { useFolders } from "@/hooks/useFolders";
 import ImageModal from "./ImageModal";
 import { BulkTagBar, GalleryGrid, SearchBar } from "./gallery";
-import FolderSidebar from "./sidebar/FolderSidebar";
+import FolderSidebarLayout from "./sidebar/FolderSidebarLayout";
 import type { ImageItem } from "@/types/gallery";
 
 export default function GalleryClient({ initialImages }: { initialImages: ImageItem[] }) {
@@ -68,36 +68,17 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
 
   return (
     <div className="flex gap-6 w-full min-h-[calc(100vh-6rem)]">
-      {/* 데스크톱: 항상 보이는 사이드바 */}
-      <div className="hidden md:flex shrink-0">
-        <FolderSidebar
-          folders={folders}
-          selectedFolderId={selectedFolderId}
-          onSelectFolder={setSelectedFolderId}
-          onAddFolder={addFolder}
-          onDeleteFolder={deleteFolder}
-          loading={foldersLoading}
-        />
-      </div>
+      <FolderSidebarLayout
+        folders={folders}
+        selectedFolderId={selectedFolderId}
+        onSelectFolder={setSelectedFolderId}
+        onAddFolder={addFolder}
+        onDeleteFolder={deleteFolder}
+        loading={foldersLoading}
+        mobileOpen={mobileSidebarOpen}
+        onMobileOpenChange={setMobileSidebarOpen}
+      />
 
-      {/* 모바일: 메뉴 버튼으로 열리는 드로어 */}
-      {mobileSidebarOpen && (
-        <FolderSidebar
-          variant="overlay"
-          folders={folders}
-          selectedFolderId={selectedFolderId}
-          onSelectFolder={(id) => {
-            setSelectedFolderId(id);
-            setMobileSidebarOpen(false);
-          }}
-          onAddFolder={addFolder}
-          onDeleteFolder={deleteFolder}
-          loading={foldersLoading}
-          onClose={() => setMobileSidebarOpen(false)}
-        />
-      )}
-
-      {/* 갤러리 영역만 기존처럼 max-w-7xl 유지, 사이드바는 왼쪽 여백에 위치 */}
       <div className="flex-1 min-w-0 flex justify-center">
         <div className="w-full max-w-7xl space-y-8">
           <div className="flex items-center gap-3">

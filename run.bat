@@ -23,14 +23,22 @@ if exist "requirements.txt" (
     pip install -r requirements.txt
 )
 
-echo [2/2] Launching Separate Windows...
+echo [2/2] Building and launching...
+
+:: 배포용 프로덕션 빌드 (최초 또는 코드 변경 시 수 분 소요)
+call npm run build
+if %errorlevel% neq 0 (
+    echo [ERROR] Frontend build failed.
+    pause
+    exit /b
+)
 
 start http://localhost:3000
 
 :: AI 서버 실행
 start "AI_BACKEND" cmd /k "cd /d %PROJECT_ROOT%server && ..\.venv\Scripts\activate && python main.py"
 
-:: 프론트엔드 실행 (call을 붙여서 npm을 실행해야 배치 파일이 끊기지 않습니다)
-start "NEXTJS_FRONTEND" cmd /k "cd /d %PROJECT_ROOT% && call npm run dev"
+:: 프론트엔드 프로덕션 서버 실행
+start "NEXTJS_FRONTEND" cmd /k "cd /d %PROJECT_ROOT% && call npm run start"
 
 echo All systems go!

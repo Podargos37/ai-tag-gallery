@@ -55,7 +55,7 @@ export default function ImageDetailsSidebar({
         <div className="overflow-hidden">
           <h3 className="font-semibold truncate mb-1">{image.originalName}</h3>
           <p className="text-white/40 text-xs flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> {new Date(image.createdAt).toLocaleDateString()}
+            <Calendar className="w-3 h-3" /> {image.createdAt ? new Date(image.createdAt).toLocaleDateString() : '-'}
           </p>
         </div>
         <button onClick={onClose} className="text-white/50 hover:text-white">
@@ -66,7 +66,7 @@ export default function ImageDetailsSidebar({
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         <MetadataSection id={image.id} filename={image.filename} />
 
-        <TagSection id={image.id} tags={image.tags} onTagsSaved={handleTagsSaved} />
+        <TagSection id={image.id} tags={image.tags ?? []} onTagsSaved={handleTagsSaved} />
 
         <NoteSection
           notes={notes}

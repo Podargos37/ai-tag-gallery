@@ -57,7 +57,7 @@ export default function GalleryCard({
       </button>
 
       <img
-        src={`/thumbnails/${image.thumbnail}`}
+        src={`/api/thumb?id=${image.id}`}
         className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
         alt={image.originalName}
         loading="lazy"

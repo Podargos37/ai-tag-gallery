@@ -1,6 +1,8 @@
 import GalleryClient from "@/components/GalleryClient";
 import { getImageMetadataList } from "@/lib/images";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const initialImages = await getImageMetadataList();
 

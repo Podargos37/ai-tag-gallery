@@ -41,7 +41,7 @@ export default function ImagePane({
       )}
 
       <img
-        src={`/uploads/${image.filename}`}
+        src={`/api/file?filename=${encodeURIComponent(image.filename)}`}
         className="w-full h-full object-contain"
         alt={image.originalName}
       />

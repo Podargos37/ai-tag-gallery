@@ -34,7 +34,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     return images.filter((img) => idSet.has(img.id));
   }, [images, folders, selectedFolderId]);
 
-  const { search, setSearch, filteredImages, setFilteredImages, isSearching } = useSearch(baseImages);
+  const { search, setSearch, filteredImages, setFilteredImages, isSearching, runSearch } = useSearch(baseImages);
   const { deleteImage } = useDelete(setFilteredImages);
 
   const {
@@ -91,7 +91,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
               <Menu className="w-6 h-6" />
             </button>
             <div className="flex-1 min-w-0">
-              <SearchBar value={search} onChange={setSearch} isSearching={isSearching} />
+              <SearchBar value={search} onChange={setSearch} isSearching={isSearching} onSubmit={runSearch} />
             </div>
           </div>
 

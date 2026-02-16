@@ -37,6 +37,16 @@ export function useGallerySelection(filteredImages: ImageItem[]) {
     setLastClickedIndex(index);
   };
 
+  const handleCardToggleOne = (image: ImageItem, index: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(image.id)) next.delete(image.id);
+      else next.add(image.id);
+      return next;
+    });
+    setLastClickedIndex(index);
+  };
+
   const clearSelection = () => {
     setSelectedIds(new Set());
     setLastClickedIndex(-1);
@@ -47,6 +57,7 @@ export function useGallerySelection(filteredImages: ImageItem[]) {
     setSelectedImage,
     selectedIds,
     handleCardSelectionClick,
+    handleCardToggleOne,
     clearSelection,
     handleNavigate,
     currentIndex,

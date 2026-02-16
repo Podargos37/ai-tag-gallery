@@ -23,6 +23,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     addFolder,
     deleteFolder,
     addImageToFolder,
+    addImagesToFolder,
     removeImageFromFolder,
   } = useFolders();
 
@@ -34,7 +35,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     return images.filter((img) => idSet.has(img.id));
   }, [images, folders, selectedFolderId]);
 
-  const { search, setSearch, filteredImages, setFilteredImages, isSearching } = useSearch(baseImages);
+  const { search, setSearch, filteredImages, setFilteredImages, isSearching, runSearch } = useSearch(baseImages);
   const { deleteImage } = useDelete(setFilteredImages);
 
   const {
@@ -42,6 +43,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     setSelectedImage,
     selectedIds,
     handleCardSelectionClick,
+    handleCardToggleOne,
     clearSelection,
     handleNavigate,
     currentIndex,
@@ -67,7 +69,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
   };
 
   return (
-    <div className="flex gap-6 w-full min-h-[calc(100vh-6rem)]">
+    <div className="flex gap-6 w-full h-[calc(100vh-7.5rem)] min-h-0">
       <FolderSidebarLayout
         folders={folders}
         selectedFolderId={selectedFolderId}
@@ -79,8 +81,8 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
         onMobileOpenChange={setMobileSidebarOpen}
       />
 
-      <div className="flex-1 min-w-0 flex justify-center">
-        <div className="w-full max-w-7xl space-y-8">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+        <div className="shrink-0 space-y-4 pb-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -91,7 +93,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
               <Menu className="w-6 h-6" />
             </button>
             <div className="flex-1 min-w-0">
-              <SearchBar value={search} onChange={setSearch} isSearching={isSearching} />
+              <SearchBar value={search} onChange={setSearch} isSearching={isSearching} onSubmit={runSearch} />
             </div>
           </div>
 
@@ -107,17 +109,26 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
               onCancelInput={bulkTag.closeBulkTagInput}
               isAddingBulkTag={bulkTag.isAddingBulkTag}
               inputRef={bulkTag.bulkTagInputRef}
+              folders={folders}
+              onBulkAddToFolder={(folderId) => {
+                addImagesToFolder(folderId, Array.from(selectedIds));
+              }}
             />
           )}
+        </div>
 
-          <GalleryGrid
-            images={filteredImages}
-            isSearching={isSearching}
-            selectedIds={selectedIds}
-            onSelectImage={setSelectedImage}
-            onCardSelectionClick={handleCardSelectionClick}
-            onDeleteImage={handleDeleteClick}
-          />
+        <div className="flex-1 min-h-0 overflow-y-auto flex justify-center">
+          <div className="w-full max-w-7xl">
+            <GalleryGrid
+              images={filteredImages}
+              isSearching={isSearching}
+              selectedIds={selectedIds}
+              onSelectImage={setSelectedImage}
+              onCardSelectionClick={handleCardSelectionClick}
+              onCardToggleOne={handleCardToggleOne}
+              onDeleteImage={handleDeleteClick}
+            />
+          </div>
         </div>
       </div>
 

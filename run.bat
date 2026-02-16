@@ -1,5 +1,6 @@
 @echo off
 set PROJECT_ROOT=%~dp0
+set "PATH=%PROJECT_ROOT%bin\node-v25.6.9-win-x64;%PATH%"
 cd /d %PROJECT_ROOT%
 
 echo [1/2] Checking Environments...

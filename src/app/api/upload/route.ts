@@ -6,8 +6,8 @@ import path from "path";
 import { deleteProgress, setProgress } from "./progressStore";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
-const THUMB_DIR = path.join(process.cwd(), "public", "thumbnails"); // 썸네일 폴더 추가
-const METADATA_DIR = path.join(process.cwd(), "public", "metadata");
+const THUMB_DIR = path.join(process.cwd(), "public", "thumbnails");
+const PYTHON_API = process.env.PYTHON_API_URL ?? "http://127.0.0.1:8000";
 
 async function mapLimit<T, R>(
   items: T[],
@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
     await Promise.all([
       fs.mkdir(UPLOAD_DIR, { recursive: true }),
       fs.mkdir(THUMB_DIR, { recursive: true }),
-      fs.mkdir(METADATA_DIR, { recursive: true }),
     ]);
 
     const baseId = Date.now();
@@ -105,7 +104,7 @@ export async function POST(req: NextRequest) {
         console.warn("AI Tagging failed");
       }
 
-      // 4. 메타데이터 생성 (원본 width/height로 갤러리 비율 표시용)
+      // 4. 메타데이터 생성 후 LanceDB(Python)에 등록
       const metadata = {
         id: fileId,
         originalName: file.name,
@@ -118,7 +117,14 @@ export async function POST(req: NextRequest) {
         notes: "",
       };
 
-      await fs.writeFile(path.join(METADATA_DIR, jsonFilename), JSON.stringify(metadata, null, 2));
+      const pyRes = await fetch(`${PYTHON_API}/images`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(metadata),
+      });
+      if (!pyRes.ok) {
+        console.warn("LanceDB insert failed:", await pyRes.text());
+      }
 
       if (uploadId) {
         completed += 1;

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 
+const PYTHON_API = process.env.PYTHON_API_URL ?? "http://127.0.0.1:8000";
+
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -13,17 +15,21 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Missing ID or filename" }, { status: 400 });
     }
 
-    // 1. 경로 설정
     const uploadPath = path.join(process.cwd(), "public", "uploads", filename);
     const thumbPath = path.join(process.cwd(), "public", "thumbnails", `${id}.webp`);
-    const metadataPath = path.join(process.cwd(), "public", "metadata", `${id}.json`);
 
-    // 2. 파일 삭제 실행
     await Promise.all([
       fs.unlink(uploadPath).catch(() => console.warn(`File not found: ${uploadPath}`)),
       fs.unlink(thumbPath).catch(() => console.warn(`Thumbnail not found: ${thumbPath}`)),
-      fs.unlink(metadataPath).catch(() => console.warn(`Metadata not found: ${metadataPath}`))
     ]);
+
+    const res = await fetch(`${PYTHON_API}/images?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("Python delete error:", res.status, err);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

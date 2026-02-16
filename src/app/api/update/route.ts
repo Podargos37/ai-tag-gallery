@@ -1,24 +1,28 @@
 // src/app/api/update/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
+
+const PYTHON_API = process.env.PYTHON_API_URL ?? "http://127.0.0.1:8000";
 
 export async function PATCH(req: NextRequest) {
   try {
     const { id, notes, tags } = await req.json();
-    const metadataPath = path.join(process.cwd(), "public", "metadata", `${id}.json`);
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-    // 기존 데이터 읽기
-    const content = await fs.readFile(metadataPath, "utf-8");
-    const metadata = JSON.parse(content);
+    const body: { notes?: string; tags?: string[] } = {};
+    if (notes !== undefined) body.notes = notes;
+    if (tags !== undefined) body.tags = tags;
+    if (Object.keys(body).length === 0) return NextResponse.json({ success: true });
 
-    // 데이터 업데이트 (전달된 값이 있을 때만 교체)
-    if (notes !== undefined) metadata.notes = notes;
-    if (tags !== undefined) metadata.tags = tags;
-
-    // 변경사항 저장
-    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-
+    const res = await fetch(`${PYTHON_API}/images/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("Python update error:", res.status, err);
+      return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Update error:", error);

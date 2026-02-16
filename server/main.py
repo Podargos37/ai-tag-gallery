@@ -1,5 +1,7 @@
-# server/main.py — FastAPI 백엔드 (태깅, 시맨틱 검색, 터널 URL)
+# server/main.py — FastAPI 백엔드 (태깅, 시맨틱 검색, LanceDB 이미지 API, 터널 URL)
 import threading
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,7 +9,20 @@ from sentence_transformers import SentenceTransformer, util
 from tagger import WD14Eva02Tagger
 from tunnel import start_tunnel, get_tunnel_url
 
-app = FastAPI()
+from db import ensure_migrated, get_table
+from schema import VECTOR_DIM
+
+# 마이그레이션 후 이미지 행 삽입용 0 벡터
+ZERO_VECTOR = [0.0] * VECTOR_DIM
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_migrated()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
   CORSMiddleware,
   allow_origins=["http://localhost:3000"],
@@ -22,6 +37,30 @@ text_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 class SearchRequest(BaseModel):
   query: str
   all_tags: list
+
+
+class ImageUpdateBody(BaseModel):
+  notes: str | None = None
+  tags: list[str] | None = None
+
+
+class ImageCreateBody(BaseModel):
+  id: str
+  filename: str
+  thumbnail: str
+  originalName: str
+  tags: list[str]
+  width: int | None = None
+  height: int | None = None
+  notes: str = ""
+  createdAt: str
+
+
+@app.get("/health")
+def health():
+  """run.bat 등에서 AI 서버 준비 여부 확인용."""
+  return {"ok": True}
+
 
 @app.post("/tag")
 async def get_tags(file: UploadFile = File(...)):
@@ -41,6 +80,63 @@ async def search_semantic(req: SearchRequest):
 
   match_tags = [req.all_tags[i] for i, score in enumerate(cos_scores) if score > 0.8]
   return {"match_tags": match_tags}
+
+
+@app.get("/images")
+def list_images():
+  """LanceDB images 테이블 목록. id 기준 최신순, vector 제외."""
+  table = get_table()
+  df = table.to_pandas()
+  df = df.drop(columns=["vector"], errors="ignore")
+  df["notes"] = df["notes"].fillna("")
+  rows = df.to_dict("records")
+  for d in rows:
+    if "tags" in d and hasattr(d["tags"], "tolist"):
+      d["tags"] = d["tags"].tolist()
+  out = sorted(rows, key=lambda x: int(x.get("id", 0) or 0), reverse=True)
+  return out
+
+
+@app.patch("/images/{image_id}")
+def update_image(image_id: str, body: ImageUpdateBody):
+  table = get_table()
+  safe_id = image_id.replace("'", "''")
+  pred = f"id = '{safe_id}'"
+  values = {}
+  if body.notes is not None:
+    values["notes"] = body.notes
+  if body.tags is not None:
+    values["tags"] = body.tags
+  if values:
+    table.update(where=pred, values=values)
+  return {"success": True}
+
+
+@app.delete("/images")
+def delete_image(id: str):
+  table = get_table()
+  safe_id = id.replace("'", "''")
+  table.delete(f"id = '{safe_id}'")
+  return {"success": True}
+
+
+@app.post("/images")
+def create_image(body: ImageCreateBody):
+  row = {
+    "id": body.id,
+    "filename": body.filename,
+    "thumbnail": body.thumbnail,
+    "originalName": body.originalName,
+    "tags": body.tags,
+    "width": body.width,
+    "height": body.height,
+    "notes": body.notes or "",
+    "createdAt": body.createdAt,
+    "vector": ZERO_VECTOR,
+  }
+  table = get_table()
+  table.add([row])
+  return {"success": True}
 
 
 @app.get("/tunnel-url")

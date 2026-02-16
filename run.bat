@@ -34,7 +34,6 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-start http://localhost:3000
 
 :: AI 서버 실행
 start "AI_BACKEND" cmd /k "cd /d %PROJECT_ROOT%server && ..\.venv\Scripts\activate && python main.py"
@@ -51,5 +50,7 @@ echo AI backend is ready.
 
 :: 프론트엔드 프로덕션 서버 실행
 start "NEXTJS_FRONTEND" cmd /k "cd /d %PROJECT_ROOT% && call npm run start"
+
+start http://localhost:3000
 
 echo All systems go!

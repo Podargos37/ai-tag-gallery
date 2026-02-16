@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { FolderOpen, Folder, Plus, Trash2, Loader2, X } from "lucide-react";
+import { FolderOpen, Folder, FolderMinus, Plus, Trash2, Loader2, X } from "lucide-react";
 import type { Folder as FolderType } from "@/types/folders";
+import { UNFOLDERED_ID } from "@/types/folders";
 
 interface FolderSidebarProps {
   folders: FolderType[];
@@ -11,6 +12,7 @@ interface FolderSidebarProps {
   onAddFolder: (name: string) => void;
   onDeleteFolder: (id: string) => void;
   loading?: boolean;
+  unfolderedCount?: number;
   /** 모바일 드로어로 띄울 때 true → 배경+닫기 버튼 */
   variant?: "inline" | "overlay";
   onClose?: () => void;
@@ -23,6 +25,7 @@ export default function FolderSidebar({
   onAddFolder,
   onDeleteFolder,
   loading = false,
+  unfolderedCount = 0,
   variant = "inline",
   onClose,
 }: FolderSidebarProps) {
@@ -80,6 +83,22 @@ export default function FolderSidebar({
             >
               <FolderOpen className="w-4 h-4 shrink-0" />
               <span className="truncate">전체</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onSelectFolder(UNFOLDERED_ID)}
+              className={`w-full flex items-center gap-2 px-4 py-2.5 text-left transition-colors ${
+                selectedFolderId === UNFOLDERED_ID
+                  ? "bg-indigo-500/20 text-indigo-200"
+                  : "text-white/80 hover:bg-white/5"
+              }`}
+            >
+              <FolderMinus className="w-4 h-4 shrink-0" />
+              <span className="truncate">미분류</span>
+              <span className="ml-auto text-xs text-white/40 shrink-0">
+                {unfolderedCount}
+              </span>
             </button>
 
             {folders.map((folder) => (

@@ -39,6 +39,16 @@ start http://localhost:3000
 :: AI 서버 실행
 start "AI_BACKEND" cmd /k "cd /d %PROJECT_ROOT%server && ..\.venv\Scripts\activate && python main.py"
 
+:: AI 서버가 응답할 때까지 대기 (WD14 등 로딩)
+echo Waiting for AI backend...
+:wait_backend
+timeout /t 5 /nobreak >nul
+curl -s -f http://127.0.0.1:8000/health >nul 2>&1
+if %errorlevel% equ 0 goto backend_ready
+goto wait_backend
+:backend_ready
+echo AI backend is ready.
+
 :: 프론트엔드 프로덕션 서버 실행
 start "NEXTJS_FRONTEND" cmd /k "cd /d %PROJECT_ROOT% && call npm run start"
 

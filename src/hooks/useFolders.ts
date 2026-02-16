@@ -85,6 +85,22 @@ export function useFolders() {
     [folders, persist]
   );
 
+  const addImagesToFolder = useCallback(
+    async (folderId: string, imageIds: string[]) => {
+      const idSet = new Set(imageIds);
+      await persist(
+        folders.map((f) => {
+          if (f.id !== folderId) return f;
+          const existing = new Set(f.imageIds);
+          const toAdd = [...idSet].filter((id) => !existing.has(id));
+          if (toAdd.length === 0) return f;
+          return { ...f, imageIds: [...f.imageIds, ...toAdd] };
+        })
+      );
+    },
+    [folders, persist]
+  );
+
   const removeImageFromFolder = useCallback(
     async (folderId: string, imageId: string) => {
       await persist(
@@ -107,6 +123,7 @@ export function useFolders() {
     deleteFolder,
     renameFolder,
     addImageToFolder,
+    addImagesToFolder,
     removeImageFromFolder,
     refetch: load,
   };

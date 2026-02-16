@@ -23,6 +23,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     addFolder,
     deleteFolder,
     addImageToFolder,
+    addImagesToFolder,
     removeImageFromFolder,
   } = useFolders();
 
@@ -42,6 +43,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     setSelectedImage,
     selectedIds,
     handleCardSelectionClick,
+    handleCardToggleOne,
     clearSelection,
     handleNavigate,
     currentIndex,
@@ -107,6 +109,10 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
               onCancelInput={bulkTag.closeBulkTagInput}
               isAddingBulkTag={bulkTag.isAddingBulkTag}
               inputRef={bulkTag.bulkTagInputRef}
+              folders={folders}
+              onBulkAddToFolder={(folderId) => {
+                addImagesToFolder(folderId, Array.from(selectedIds));
+              }}
             />
           )}
         </div>
@@ -119,6 +125,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
               selectedIds={selectedIds}
               onSelectImage={setSelectedImage}
               onCardSelectionClick={handleCardSelectionClick}
+              onCardToggleOne={handleCardToggleOne}
               onDeleteImage={handleDeleteClick}
             />
           </div>

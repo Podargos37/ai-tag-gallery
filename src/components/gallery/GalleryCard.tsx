@@ -9,6 +9,7 @@ interface GalleryCardProps {
   isSelected?: boolean;
   onSelect: () => void;
   onSelectionClick?: (e: React.MouseEvent) => void;
+  onToggleOneClick?: () => void;
   onDelete: (e: React.MouseEvent) => void;
 }
 
@@ -17,10 +18,15 @@ export default function GalleryCard({
   isSelected = false,
   onSelect,
   onSelectionClick,
+  onToggleOneClick,
   onDelete,
 }: GalleryCardProps) {
   const handleClick = (e: React.MouseEvent) => {
-    if (e.shiftKey) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      onToggleOneClick?.();
+    } else if (e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
       onSelectionClick?.(e);

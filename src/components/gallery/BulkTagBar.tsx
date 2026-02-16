@@ -1,6 +1,8 @@
 "use client";
 
-import { Tag, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Tag, X, FolderPlus, Folder } from "lucide-react";
+import type { Folder as FolderType } from "@/types/folders";
 
 interface BulkTagBarProps {
   selectedCount: number;
@@ -13,6 +15,8 @@ interface BulkTagBarProps {
   onCancelInput: () => void;
   isAddingBulkTag: boolean;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  folders?: FolderType[];
+  onBulkAddToFolder?: (folderId: string) => void;
 }
 
 export default function BulkTagBar({
@@ -26,7 +30,38 @@ export default function BulkTagBar({
   onCancelInput,
   isAddingBulkTag,
   inputRef,
+  folders = [],
+  onBulkAddToFolder,
 }: BulkTagBarProps) {
+  const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
+  const folderDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!folderDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (folderDropdownRef.current && !folderDropdownRef.current.contains(e.target as Node)) {
+        setFolderDropdownOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFolderDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [folderDropdownOpen]);
+
+  const handleFolderSelect = (folderId: string) => {
+    onBulkAddToFolder?.(folderId);
+    setFolderDropdownOpen(false);
+  };
+
+  const hasFolders = folders.length > 0;
+  const showFolderButton = onBulkAddToFolder !== undefined;
+
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-slate-800/80 px-4 py-3 backdrop-blur-sm">
       <span className="text-sm text-white/80">
@@ -42,6 +77,35 @@ export default function BulkTagBar({
             <Tag className="w-4 h-4" />
             태그 추가
           </button>
+          {showFolderButton && (
+            <div className="relative" ref={folderDropdownRef}>
+              <button
+                type="button"
+                onClick={() => hasFolders && setFolderDropdownOpen((v) => !v)}
+                disabled={!hasFolders}
+                title={!hasFolders ? "폴더가 없습니다. 왼쪽에서 새 폴더를 만드세요." : undefined}
+                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FolderPlus className="w-4 h-4" />
+                폴더에 추가
+              </button>
+              {folderDropdownOpen && hasFolders && (
+                <div className="absolute left-0 top-full z-10 mt-1 min-w-[160px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl">
+                  {folders.map((folder) => (
+                    <button
+                      key={folder.id}
+                      type="button"
+                      onClick={() => handleFolderSelect(folder.id)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-white/90 transition-colors hover:bg-white/10"
+                    >
+                      <Folder className="w-4 h-4 shrink-0 text-white/60" />
+                      {folder.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <button
             type="button"
             onClick={onClearSelection}

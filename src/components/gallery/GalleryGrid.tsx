@@ -12,6 +12,7 @@ interface GalleryGridProps {
   selectedIds?: Set<string>;
   onSelectImage: (image: ImageItem) => void;
   onCardSelectionClick?: (image: ImageItem, index: number) => void;
+  onCardToggleOne?: (image: ImageItem, index: number) => void;
   onDeleteImage: (e: React.MouseEvent, id: string, filename: string) => void;
 }
 
@@ -21,6 +22,7 @@ export default function GalleryGrid({
   selectedIds = new Set(),
   onSelectImage,
   onCardSelectionClick,
+  onCardToggleOne,
   onDeleteImage,
 }: GalleryGridProps) {
   const columnCount = useColumnCount();
@@ -65,6 +67,11 @@ export default function GalleryGrid({
             onSelectionClick={
               onCardSelectionClick
                 ? () => onCardSelectionClick(cell.image, cell.index)
+                : undefined
+            }
+            onToggleOneClick={
+              onCardToggleOne
+                ? () => onCardToggleOne(cell.image, cell.index)
                 : undefined
             }
             onDelete={(e) =>

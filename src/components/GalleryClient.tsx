@@ -11,6 +11,7 @@ import ImageModal from "./ImageModal";
 import { BulkTagBar, GalleryGrid, SearchBar } from "./gallery";
 import FolderSidebarLayout from "./sidebar/FolderSidebarLayout";
 import type { ImageItem } from "@/types/gallery";
+import { UNFOLDERED_ID } from "@/types/folders";
 
 export default function GalleryClient({ initialImages }: { initialImages: ImageItem[] }) {
   const [images, setImages] = useState<ImageItem[]>(initialImages);
@@ -27,13 +28,27 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     removeImageFromFolder,
   } = useFolders();
 
+  const idsInAnyFolder = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of folders) for (const id of f.imageIds) set.add(id);
+    return set;
+  }, [folders]);
+
   const baseImages = useMemo(() => {
+    if (selectedFolderId === UNFOLDERED_ID) {
+      return images.filter((img) => !idsInAnyFolder.has(img.id));
+    }
     if (!selectedFolderId) return images;
     const folder = folders.find((f) => f.id === selectedFolderId);
     if (!folder) return images;
     const idSet = new Set(folder.imageIds);
     return images.filter((img) => idSet.has(img.id));
-  }, [images, folders, selectedFolderId]);
+  }, [images, folders, selectedFolderId, idsInAnyFolder]);
+
+  const unfolderedCount = useMemo(
+    () => images.filter((img) => !idsInAnyFolder.has(img.id)).length,
+    [images, idsInAnyFolder]
+  );
 
   const { search, setSearch, filteredImages, setFilteredImages, isSearching, runSearch } = useSearch(baseImages);
   const { deleteImage } = useDelete(setFilteredImages);
@@ -77,6 +92,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
         onAddFolder={addFolder}
         onDeleteFolder={deleteFolder}
         loading={foldersLoading}
+        unfolderedCount={unfolderedCount}
         mobileOpen={mobileSidebarOpen}
         onMobileOpenChange={setMobileSidebarOpen}
       />

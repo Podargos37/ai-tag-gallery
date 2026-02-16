@@ -10,6 +10,7 @@ interface FolderSidebarLayoutProps {
   onAddFolder: (name: string) => void;
   onDeleteFolder: (id: string) => void;
   loading?: boolean;
+  unfolderedCount?: number;
   mobileOpen: boolean;
   onMobileOpenChange: (open: boolean) => void;
 }
@@ -21,6 +22,7 @@ export default function FolderSidebarLayout({
   onAddFolder,
   onDeleteFolder,
   loading = false,
+  unfolderedCount = 0,
   mobileOpen,
   onMobileOpenChange,
 }: FolderSidebarLayoutProps) {
@@ -30,6 +32,7 @@ export default function FolderSidebarLayout({
     onAddFolder,
     onDeleteFolder,
     loading,
+    unfolderedCount,
   };
 
   return (

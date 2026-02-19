@@ -14,10 +14,12 @@ export type ImageMetadataForApi = {
 
 /**
  * Python /tag API로 이미지 AI 태깅 요청
+ * @param threshold WD14 확률 임계값 (0.2~1.0). 낮을수록 더 많은 태그
  */
 export async function tagImage(
   file: File,
-  buffer: Buffer
+  buffer: Buffer,
+  threshold?: number
 ): Promise<string[]> {
   const formData = new FormData();
   formData.append(
@@ -25,7 +27,11 @@ export async function tagImage(
     new Blob([new Uint8Array(buffer)], { type: file.type }),
     file.name
   );
-  const res = await fetch(`${PYTHON_API_URL}/tag`, { method: "POST", body: formData });
+  const url =
+    threshold != null
+      ? `${PYTHON_API_URL}/tag?threshold=${threshold}`
+      : `${PYTHON_API_URL}/tag`;
+  const res = await fetch(url, { method: "POST", body: formData });
   if (!res.ok) return [];
   const data = await res.json();
   const raw = Array.isArray(data.tags) ? data.tags : [];

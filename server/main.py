@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 import torch
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, util
@@ -80,6 +80,7 @@ text_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 class SearchRequest(BaseModel):
   query: str
   all_tags: list
+  similarity_threshold: float = 0.8
 
 
 class ImageUpdateBody(BaseModel):
@@ -144,10 +145,10 @@ def health():
 
 
 @app.post("/tag")
-async def get_tags(file: UploadFile = File(...)):
+async def get_tags(file: UploadFile = File(...), threshold: float = Query(0.35)):
   tagger = await get_or_load_tagger()
   contents = await file.read()
-  tags = await asyncio.to_thread(tagger.predict, contents)
+  tags = await asyncio.to_thread(tagger.predict, contents, threshold)
   schedule_tagger_unload()
   return {"tags": tags}
 
@@ -161,7 +162,8 @@ async def search_semantic(req: SearchRequest):
   tag_vecs = text_model.encode(req.all_tags, convert_to_tensor=True)
   cos_scores = util.cos_sim(query_vec, tag_vecs)[0]
 
-  match_tags = [req.all_tags[i] for i, score in enumerate(cos_scores) if score > 0.8]
+  th = req.similarity_threshold
+  match_tags = [req.all_tags[i] for i, score in enumerate(cos_scores) if score > th]
   return {"match_tags": match_tags}
 
 

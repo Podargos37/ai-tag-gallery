@@ -13,6 +13,8 @@ import type { ImageItem } from "@/types/gallery";
 export type ProcessOneImageOptions = {
   baseId: number;
   excludeTagSet: Set<string>;
+  /** WD14 확률 임계값 (0.2~1.0). 없으면 Python 기본값 사용 */
+  wd14Threshold?: number;
   /** 한 장 처리 완료 시 호출 (progress 갱신용) */
   onComplete?: () => void;
 };
@@ -27,7 +29,7 @@ export async function processOneImage(
   index: number,
   options: ProcessOneImageOptions
 ): Promise<ImageItem> {
-  const { baseId, excludeTagSet, onComplete } = options;
+  const { baseId, excludeTagSet, wd14Threshold, onComplete } = options;
   const buffer = Buffer.from(await file.arrayBuffer());
   const fileId = (baseId + index).toString();
 
@@ -41,7 +43,7 @@ export async function processOneImage(
     thumbFilename
   );
 
-  let tags = await fetchAndFilterTags(file, buffer, excludeTagSet);
+  let tags = await fetchAndFilterTags(file, buffer, excludeTagSet, wd14Threshold);
 
   const metadata: ImageMetadataForApi = {
     id: fileId,
@@ -84,11 +86,12 @@ async function createThumbnail(
 async function fetchAndFilterTags(
   file: File,
   buffer: Buffer,
-  excludeTagSet: Set<string>
+  excludeTagSet: Set<string>,
+  wd14Threshold?: number
 ): Promise<string[]> {
   let raw: string[] = [];
   try {
-    raw = await tagImage(file, buffer);
+    raw = await tagImage(file, buffer, wd14Threshold);
   } catch (e) {
     console.warn("AI Tagging failed");
   }

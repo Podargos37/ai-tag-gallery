@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
-import { THEME_KEY, DEFAULT_THEME, isValidThemeId } from "@/constants/themes";
+import { getSettings } from "@/lib/api";
+import { DEFAULT_THEME, isValidThemeId } from "@/constants/themes";
 
 export default function ThemeInit() {
   useEffect(() => {
-    const t = localStorage.getItem(THEME_KEY);
-    document.documentElement.setAttribute(
-      "data-theme",
-      isValidThemeId(t) ? t : DEFAULT_THEME
-    );
+    getSettings()
+      .then((s) => {
+        const theme = isValidThemeId(s.theme) ? s.theme : DEFAULT_THEME;
+        document.documentElement.setAttribute("data-theme", theme);
+      })
+      .catch(() => {
+        document.documentElement.setAttribute("data-theme", DEFAULT_THEME);
+      });
   }, []);
   return null;
 }

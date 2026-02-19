@@ -9,4 +9,9 @@ export {
   type UploadResponse,
 } from "./upload";
 export { bulkRemoveTags } from "./bulk-remove-tags";
+export {
+  getSettings,
+  patchSettings,
+  type AppSettings,
+} from "./settings";
 export { getExcludeTags, saveExcludeTags } from "./exclude-tags";

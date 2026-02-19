@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import { readExcludeTagsFromFile } from "@/lib/server/exclude-tags";
+import { readSettingsFromFile } from "@/lib/server/settings";
 import { mapLimit } from "@/lib/utils/mapLimit";
 import { UPLOAD_DIR, THUMB_DIR } from "@/lib/upload/constants";
 import { processOneImage } from "@/lib/upload/processImage";
@@ -27,10 +28,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
 
-    const excludeList = await readExcludeTagsFromFile();
+    const [excludeList, settings] = await Promise.all([
+      readExcludeTagsFromFile(),
+      readSettingsFromFile(),
+    ]);
     const excludeTagSet = new Set(
       excludeList.map((t) => String(t).toLowerCase().trim()).filter(Boolean)
     );
+    const wd14Threshold = settings.wd14Threshold;
 
     const imageFiles = allFiles.filter((f) =>
       (f?.type ?? "").startsWith("image/")
@@ -60,6 +65,7 @@ export async function POST(req: NextRequest) {
       processOneImage(file, index, {
         baseId,
         excludeTagSet,
+        wd14Threshold,
         onComplete: uploadId
           ? () => {
               completed += 1;

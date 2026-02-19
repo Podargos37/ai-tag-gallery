@@ -16,6 +16,7 @@ import { UNFOLDERED_ID } from "@/types/folders";
 export default function GalleryClient({ initialImages }: { initialImages: ImageItem[] }) {
   const [images, setImages] = useState<ImageItem[]>(initialImages);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const {
     folders,
     selectedFolderId,
@@ -83,6 +84,29 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     if (!success) alert("삭제 중 오류가 발생했습니다.");
   };
 
+  const handleBulkDelete = async () => {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    if (!confirm(`선택한 ${count}개의 이미지를 삭제할까요?`)) return;
+    const toDelete = filteredImages.filter((img) => selectedIds.has(img.id));
+    setIsBulkDeleting(true);
+    const deletedIds = new Set<string>();
+    try {
+      for (const img of toDelete) {
+        const ok = await deleteImage(img.id, img.filename);
+        if (ok) deletedIds.add(img.id);
+      }
+      setImages((prev) => prev.filter((img) => !deletedIds.has(img.id)));
+      if (selectedImage && deletedIds.has(selectedImage.id)) setSelectedImage(null);
+      clearSelection();
+      if (deletedIds.size < toDelete.length) {
+        alert(`일부 삭제에 실패했습니다. (${toDelete.length - deletedIds.size}개)`);
+      }
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   return (
     <div className="flex gap-6 w-full h-[calc(100vh-7.5rem)] min-h-0">
       <FolderSidebarLayout
@@ -129,6 +153,8 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
               onBulkAddToFolder={(folderId) => {
                 addImagesToFolder(folderId, Array.from(selectedIds));
               }}
+              onBulkDelete={handleBulkDelete}
+              isDeleting={isBulkDeleting}
             />
           )}
         </div>

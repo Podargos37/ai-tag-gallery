@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Tag, X, FolderPlus, Folder } from "lucide-react";
+import { Tag, X, FolderPlus, Folder, Trash2 } from "lucide-react";
 import type { Folder as FolderType } from "@/types/folders";
 
 interface BulkTagBarProps {
@@ -17,6 +17,8 @@ interface BulkTagBarProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
   folders?: FolderType[];
   onBulkAddToFolder?: (folderId: string) => void;
+  onBulkDelete?: () => void;
+  isDeleting?: boolean;
 }
 
 export default function BulkTagBar({
@@ -32,6 +34,8 @@ export default function BulkTagBar({
   inputRef,
   folders = [],
   onBulkAddToFolder,
+  onBulkDelete,
+  isDeleting = false,
 }: BulkTagBarProps) {
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const folderDropdownRef = useRef<HTMLDivElement>(null);
@@ -105,6 +109,18 @@ export default function BulkTagBar({
                 </div>
               )}
             </div>
+          )}
+          {onBulkDelete && (
+            <button
+              type="button"
+              onClick={onBulkDelete}
+              disabled={isDeleting}
+              className="flex items-center gap-2 rounded-full border border-red-500/40 bg-red-500/20 px-4 py-2 text-sm text-red-200 transition-colors hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="선택한 이미지 삭제"
+            >
+              <Trash2 className="w-4 h-4" />
+              {isDeleting ? "삭제 중..." : "선택 삭제"}
+            </button>
           )}
           <button
             type="button"

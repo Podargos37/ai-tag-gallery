@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Tag, X, FolderPlus, Folder, Trash2 } from "lucide-react";
+import { Tag, X, Trash2 } from "lucide-react";
 import type { Folder as FolderType } from "@/types/folders";
+import FolderAddDropdown from "./FolderAddDropdown";
 
 interface BulkTagBarProps {
   selectedCount: number;
@@ -37,39 +37,22 @@ export default function BulkTagBar({
   onBulkDelete,
   isDeleting = false,
 }: BulkTagBarProps) {
-  const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
-  const folderDropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!folderDropdownOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (folderDropdownRef.current && !folderDropdownRef.current.contains(e.target as Node)) {
-        setFolderDropdownOpen(false);
-      }
-    };
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFolderDropdownOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [folderDropdownOpen]);
-
-  const handleFolderSelect = (folderId: string) => {
-    onBulkAddToFolder?.(folderId);
-    setFolderDropdownOpen(false);
-  };
-
-  const hasFolders = folders.length > 0;
   const showFolderButton = onBulkAddToFolder !== undefined;
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-slate-800/80 px-4 py-3 backdrop-blur-sm">
-      <span className="text-sm text-white/80">
-        <strong className="text-white">{selectedCount}</strong>개 선택
+    <div
+      className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur-sm"
+      style={{
+        backgroundColor: "var(--modal-bg)",
+        borderColor: "var(--surface-border)",
+      }}
+    >
+      <span
+        className="text-sm opacity-80"
+        style={{ color: "var(--foreground)" }}
+      >
+        <strong style={{ color: "var(--foreground)" }}>{selectedCount}</strong>
+        개 선택
       </span>
       {!showBulkTagInput ? (
         <>
@@ -82,40 +65,17 @@ export default function BulkTagBar({
             태그 추가
           </button>
           {showFolderButton && (
-            <div className="relative" ref={folderDropdownRef}>
-              <button
-                type="button"
-                onClick={() => hasFolders && setFolderDropdownOpen((v) => !v)}
-                disabled={!hasFolders}
-                title={!hasFolders ? "폴더가 없습니다. 왼쪽에서 새 폴더를 만드세요." : undefined}
-                className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FolderPlus className="w-4 h-4" />
-                폴더에 추가
-              </button>
-              {folderDropdownOpen && hasFolders && (
-                <div className="absolute left-0 top-full z-10 mt-1 min-w-[160px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl">
-                  {folders.map((folder) => (
-                    <button
-                      key={folder.id}
-                      type="button"
-                      onClick={() => handleFolderSelect(folder.id)}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-white/90 transition-colors hover:bg-white/10"
-                    >
-                      <Folder className="w-4 h-4 shrink-0 text-white/60" />
-                      {folder.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <FolderAddDropdown
+              folders={folders}
+              onSelect={onBulkAddToFolder}
+            />
           )}
           {onBulkDelete && (
             <button
               type="button"
               onClick={onBulkDelete}
               disabled={isDeleting}
-              className="flex items-center gap-2 rounded-full border border-red-500/40 bg-red-500/20 px-4 py-2 text-sm text-red-200 transition-colors hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 rounded-full border border-red-500/40 bg-red-500/20 px-4 py-2 text-sm text-red-200 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
               title="선택한 이미지 삭제"
             >
               <Trash2 className="w-4 h-4" />
@@ -125,7 +85,12 @@ export default function BulkTagBar({
           <button
             type="button"
             onClick={onClearSelection}
-            className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/10"
+            className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors hover:bg-[var(--surface)]"
+            style={{
+              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--surface)",
+              color: "var(--foreground)",
+            }}
           >
             <X className="w-4 h-4" />
             선택 해제
@@ -143,7 +108,12 @@ export default function BulkTagBar({
               if (e.key === "Escape") onCancelInput();
             }}
             placeholder="추가할 태그 입력 후 Enter (쉼표로 여러 개)"
-            className="flex-1 min-w-[160px] rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="flex-1 min-w-[160px] rounded-lg border px-3 py-2 text-sm placeholder:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            style={{
+              backgroundColor: "var(--surface)",
+              borderColor: "var(--surface-border)",
+              color: "var(--foreground)",
+            }}
           />
           <button
             type="button"
@@ -156,7 +126,11 @@ export default function BulkTagBar({
           <button
             type="button"
             onClick={onCancelInput}
-            className="rounded-lg border border-white/20 px-3 py-2 text-sm text-white/60 hover:text-white"
+            className="rounded-lg border px-3 py-2 text-sm opacity-80 transition-colors hover:opacity-100"
+            style={{
+              borderColor: "var(--surface-border)",
+              color: "var(--foreground)",
+            }}
           >
             취소
           </button>

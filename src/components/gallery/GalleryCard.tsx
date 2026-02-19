@@ -1,6 +1,7 @@
 "use client";
 
-import { X, Check } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { X, Check, Copy } from "lucide-react";
 import type { ImageItem } from "@/types/gallery";
 import { DEFAULT_ASPECT_RATIO } from "@/constants/gallery";
 
@@ -21,6 +22,40 @@ export default function GalleryCard({
   onToggleOneClick,
   onDelete,
 }: GalleryCardProps) {
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [copied, setCopied] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const hasTags = (image.tags?.length ?? 0) > 0;
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setContextMenuOpen(true);
+  }, []);
+
+  const copyTags = useCallback(() => {
+    if (!hasTags) return;
+    const text = (image.tags ?? []).join(", ");
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      setContextMenuOpen(false);
+    });
+  }, [image.tags, hasTags]);
+
+  useEffect(() => {
+    if (!contextMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setContextMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [contextMenuOpen]);
+
   const handleClick = (e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -43,6 +78,7 @@ export default function GalleryCard({
   return (
     <div
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
       style={{ aspectRatio }}
       className={`group w-full bg-slate-800 rounded-2xl overflow-hidden relative border transition-all duration-300 shadow-lg cursor-pointer ${
         isSelected
@@ -82,6 +118,33 @@ export default function GalleryCard({
         </div>
         <p className="text-[11px] font-medium text-white/90 truncate">{image.originalName}</p>
       </div>
+
+      {contextMenuOpen && (
+        <div
+          ref={menuRef}
+          className="fixed z-50 min-w-[140px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl"
+          style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              copyTags();
+            }}
+            disabled={!hasTags}
+            aria-label="태그 복사"
+            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+              hasTags
+                ? "text-white hover:bg-white/10"
+                : "cursor-not-allowed text-white/40"
+            }`}
+          >
+            <Copy className="h-4 w-4 shrink-0" />
+            {copied ? "복사됨" : "태그 복사"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

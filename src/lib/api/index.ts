@@ -8,3 +8,5 @@ export {
   type UploadProgressResponse,
   type UploadResponse,
 } from "./upload";
+export { bulkRemoveTags } from "./bulk-remove-tags";
+export { getExcludeTags, saveExcludeTags } from "./exclude-tags";

@@ -30,14 +30,18 @@ export const TagSection = ({ id, tags, onTagsSaved }: TagSectionProps) => {
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && newTag.trim()) {
-      e.preventDefault();
-      // 중복 태그 방지 로직 포함
-      if (!tags.includes(newTag.trim())) {
-        saveTags([...tags, newTag.trim()]);
-      }
+    if (e.key !== "Enter") return;
+    const raw = newTag.split(",").map((s) => s.trim()).filter(Boolean);
+    if (raw.length === 0) return;
+    e.preventDefault();
+    const existing = new Set(tags.map((t) => t.toLowerCase()));
+    const toAdd = raw.filter((t) => !existing.has(t.toLowerCase()));
+    if (toAdd.length === 0) {
       setNewTag("");
+      return;
     }
+    saveTags([...tags, ...toAdd]);
+    setNewTag("");
   };
 
   return (
@@ -68,7 +72,7 @@ export const TagSection = ({ id, tags, onTagsSaved }: TagSectionProps) => {
         value={newTag}
         onChange={(e) => setNewTag(e.target.value)}
         onKeyDown={handleAddTag}
-        placeholder={isUpdating ? "저장 중..." : "태그 입력 후 엔터"}
+        placeholder={isUpdating ? "저장 중..." : "태그 입력 후 엔터 (쉼표로 여러 개)"}
         className="w-full bg-black/20 border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500/50 transition-all"
       />
     </section>

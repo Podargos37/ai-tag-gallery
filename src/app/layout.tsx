@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import UploadButton from "@/components/UploadButton";
 import MobileLinkButton from "@/components/MobileLinkButton";
+import SettingsButton from "@/components/SettingsButton";
 
 export const metadata: Metadata = {
   title: "AI-Tag-Gallery",
@@ -28,6 +29,7 @@ export default function RootLayout({
         <main className="w-full p-6">
           {children}
         </main>
+        <SettingsButton />
         <MobileLinkButton />
       </body>
     </html>

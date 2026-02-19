@@ -142,7 +142,7 @@ export default function BulkTagBar({
               if (e.key === "Enter") onBulkTagSubmit();
               if (e.key === "Escape") onCancelInput();
             }}
-            placeholder="추가할 태그 입력 후 Enter"
+            placeholder="추가할 태그 입력 후 Enter (쉼표로 여러 개)"
             className="flex-1 min-w-[160px] rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
           <button

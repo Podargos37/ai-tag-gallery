@@ -99,6 +99,44 @@ class ImageCreateBody(BaseModel):
   createdAt: str
 
 
+class BulkRemoveTagsBody(BaseModel):
+  tag_names: list[str]
+
+
+@app.post("/bulk-remove-tags")
+def bulk_remove_tags(body: BulkRemoveTagsBody):
+  """제외 목록 태그를 모든 이미지에서 완전 일치로 제거."""
+  if not body.tag_names:
+    return {"success": True, "updated": 0}
+  exclude_set = {t.strip().lower() for t in body.tag_names if t and str(t).strip()}
+  if not exclude_set:
+    return {"success": True, "updated": 0}
+  table = get_table()
+  df = table.to_pandas()
+  if df.empty:
+    return {"success": True, "updated": 0}
+  if "tags" not in df.columns:
+    return {"success": True, "updated": 0}
+  updated = 0
+  for _, row in df.iterrows():
+    row_id = row.get("id")
+    if row_id is None:
+      continue
+    tags = row.get("tags")
+    if hasattr(tags, "tolist"):
+      tags = tags.tolist()
+    if not isinstance(tags, list):
+      continue
+    new_tags = [t for t in tags if str(t).strip().lower() not in exclude_set]
+    if new_tags == tags:
+      continue
+    safe_id = str(row_id).replace("'", "''")
+    pred = f"id = '{safe_id}'"
+    table.update(where=pred, values={"tags": new_tags})
+    updated += 1
+  return {"success": True, "updated": updated}
+
+
 @app.get("/health")
 def health():
   """run.bat 등에서 AI 서버 준비 여부 확인용."""

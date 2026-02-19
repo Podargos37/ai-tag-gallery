@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import fs from "fs/promises";
 import path from "path";
+import { readExcludeTagsFromFile } from "@/lib/server/exclude-tags";
 import { deleteProgress, setProgress } from "./progressStore";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest) {
     const legacySingle = formData.get("file") as File | null;
     const allFiles = files.length > 0 ? files : legacySingle ? [legacySingle] : [];
     if (allFiles.length === 0) return NextResponse.json({ error: "No file" }, { status: 400 });
+
+    const excludeList = await readExcludeTagsFromFile();
+    const excludeTagSet = new Set(excludeList.map((t) => String(t).toLowerCase().trim()).filter(Boolean));
 
     const imageFiles = allFiles.filter((f) => (f?.type || "").startsWith("image/"));
     if (imageFiles.length === 0) {
@@ -98,7 +102,11 @@ export async function POST(req: NextRequest) {
         const pyRes = await fetch("http://127.0.0.1:8000/tag", { method: "POST", body: pyFormData });
         if (pyRes.ok) {
           const pyData = await pyRes.json();
-          tags = pyData.tags;
+          const raw = Array.isArray(pyData.tags) ? pyData.tags : [];
+          tags = excludeTagSet.size > 0
+            ? raw.filter((t: string) => !excludeTagSet.has(String(t).toLowerCase().trim()))
+            : raw;
+          if (tags.length === 0) tags = ["untagged"];
         }
       } catch (e) {
         console.warn("AI Tagging failed");

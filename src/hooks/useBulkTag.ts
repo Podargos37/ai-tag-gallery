@@ -17,30 +17,39 @@ export function useBulkTag(
   const bulkTagInputRef = useRef<HTMLInputElement>(null);
 
   const handleBulkTagSubmit = async () => {
-    const newTag = bulkTagValue.trim();
-    if (!newTag) return;
+    const newTags = bulkTagValue
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (newTags.length === 0) return;
     const toUpdate = filteredImages.filter((img) => selectedIds.has(img.id));
     if (toUpdate.length === 0) return;
 
     setIsAddingBulkTag(true);
     try {
       await Promise.all(
-        toUpdate.map((img) => updateTags(img.id, [...(img.tags || []), newTag]))
+        toUpdate.map((img) => {
+          const merged = [...new Set([...(img.tags || []), ...newTags])];
+          return updateTags(img.id, merged);
+        })
       );
       setImages((prev) =>
-        prev.map((img) =>
-          selectedIds.has(img.id) ? { ...img, tags: [...(img.tags || []), newTag] } : img
-        )
+        prev.map((img) => {
+          if (!selectedIds.has(img.id)) return img;
+          const merged = [...new Set([...(img.tags || []), ...newTags])];
+          return { ...img, tags: merged };
+        })
       );
-      setSelectedImage((prev: any | null) =>
-        prev && selectedIds.has(prev.id)
-          ? { ...prev, tags: [...(prev.tags || []), newTag] }
-          : prev
-      );
+      setSelectedImage((prev: ImageItem | null) => {
+        if (!prev || !selectedIds.has(prev.id)) return prev;
+        const merged = [...new Set([...(prev.tags || []), ...newTags])];
+        return { ...prev, tags: merged };
+      });
       clearSelection();
       setShowBulkTagInput(false);
       setBulkTagValue("");
-      alert(`${toUpdate.length}개 이미지에 #${newTag} 태그를 추가했습니다.`);
+      const tagText = newTags.length <= 3 ? newTags.map((t) => `#${t}`).join(", ") : `${newTags.length}개 태그`;
+      alert(`${toUpdate.length}개 이미지에 ${tagText}를 추가했습니다.`);
     } catch {
       alert("태그 추가 중 오류가 발생했습니다.");
     } finally {

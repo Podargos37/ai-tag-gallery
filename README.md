@@ -86,8 +86,14 @@ Prerequisites
     git clone https://github.com/Podargos37/ai-tag-gallery.git
     cd ai-tag-gallery
     ```
-2.  의존성 설치 및 실행:
-    * 루트 폴더에 있는 `run.bat` 파일을 더블 클릭하면 모든 서버가 자동으로 실행됩니다.
+2.  Python 의존성 설치:
+    * 가상환경 생성 및 활성화 후 `pip install -r requirements.txt` 실행.
+    * **PyTorch는 환경에 맞게 따로 설치합니다.** (requirements.txt에는 넣지 않아, run.bat이 매번 실행해도 GPU용 설치가 덮어씌워지지 않습니다.)
+        * **CPU**: `pip install torch torchvision`
+        * **GPU (CUDA 12.1)**: `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121`
+        * 다른 CUDA 버전은 [PyTorch 설치 페이지](https://pytorch.org/get-started/locally/) 참고.
+3.  실행:
+    * 루트 폴더에 있는 `run.bat` 파일을 더블 클릭하면 모든 서버가 자동으로 실행됩니다. (필요 시 Python 의존성도 함께 설치됩니다.)
     * 브라우저에서 `http://localhost:3000` 접속 확인.
 
 ---

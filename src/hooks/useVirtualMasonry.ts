@@ -7,6 +7,8 @@ import type { MasonryCell } from "@/lib/masonry";
 import {
   VIRTUAL_MASONRY_GAP,
   VIRTUAL_MASONRY_OVERSCAN_PX,
+  MIN_COLUMN_WIDTH,
+  MAX_COLUMN_COUNT,
 } from "@/constants/gallery";
 
 function findScrollParent(el: HTMLElement | null): HTMLElement | null {
@@ -24,7 +26,6 @@ function findScrollParent(el: HTMLElement | null): HTMLElement | null {
 
 export interface UseVirtualMasonryOptions {
   images: ImageItem[];
-  columnCount: number;
 }
 
 export interface UseVirtualMasonryResult {
@@ -33,9 +34,16 @@ export interface UseVirtualMasonryResult {
   visibleCells: MasonryCell[];
 }
 
+function getColumnCount(containerWidth: number): number {
+  if (containerWidth <= 0) return 1;
+  const count = Math.floor(
+    (containerWidth + VIRTUAL_MASONRY_GAP) / (MIN_COLUMN_WIDTH + VIRTUAL_MASONRY_GAP)
+  );
+  return Math.max(1, Math.min(MAX_COLUMN_COUNT, count));
+}
+
 export function useVirtualMasonry({
   images,
-  columnCount,
 }: UseVirtualMasonryOptions): UseVirtualMasonryResult {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(800);
@@ -121,6 +129,8 @@ export function useVirtualMasonry({
     window.addEventListener("scroll", onWindowScroll, { passive: true });
     return () => window.removeEventListener("scroll", onWindowScroll);
   }, []);
+
+  const columnCount = getColumnCount(containerWidth);
 
   const { cells, totalHeight } = useMemo(() => {
     if (containerWidth <= 0 || images.length === 0)

@@ -14,3 +14,7 @@ export const VIRTUAL_ROW_GAP = 24;
 /** 가상 매슨리: 셀 간격(px), 뷰포트 밖 overscan(px) */
 export const VIRTUAL_MASONRY_GAP = 24;
 export const VIRTUAL_MASONRY_OVERSCAN_PX = 400;
+
+/** 컬럼 수: 최소 컬럼 너비(px) 이하로 안 줄임. 화면이 넓을수록 열 수 증가 → 축소 시 더 많은 이미지 노출 */
+export const MIN_COLUMN_WIDTH = 200;
+export const MAX_COLUMN_COUNT = 14;

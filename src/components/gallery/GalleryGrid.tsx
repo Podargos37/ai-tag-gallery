@@ -3,7 +3,6 @@
 import GalleryCard from "./GalleryCard";
 import VirtualMasonryView from "./VirtualMasonryView";
 import type { ImageItem } from "@/types/gallery";
-import { useColumnCount } from "@/hooks/useColumnCount";
 import { useVirtualMasonry } from "@/hooks/useVirtualMasonry";
 
 interface GalleryGridProps {
@@ -25,10 +24,8 @@ export default function GalleryGrid({
   onCardToggleOne,
   onDeleteImage,
 }: GalleryGridProps) {
-  const columnCount = useColumnCount();
   const { containerRef, totalHeight, visibleCells } = useVirtualMasonry({
     images,
-    columnCount,
   });
 
   if (images.length === 0 && !isSearching) {

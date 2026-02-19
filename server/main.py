@@ -1,7 +1,11 @@
 # server/main.py — FastAPI 백엔드 (태깅, 시맨틱 검색, LanceDB 이미지 API, 터널 URL)
+import asyncio
+import gc
 import threading
 from contextlib import asynccontextmanager
+from typing import Optional
 
+import torch
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,6 +18,46 @@ from schema import VECTOR_DIM
 
 # 마이그레이션 후 이미지 행 삽입용 0 벡터
 ZERO_VECTOR = [0.0] * VECTOR_DIM
+
+# WD14 태거: 업로드(/tag) 시에만 로드, 유휴 시 언로드
+_tagger: Optional[WD14Eva02Tagger] = None
+_tagger_lock: Optional[asyncio.Lock] = None
+_tagger_unload_handle: Optional[asyncio.TimerHandle] = None
+TAGGER_IDLE_UNLOAD_SECONDS = 120
+
+
+def _get_tagger_lock() -> asyncio.Lock:
+    global _tagger_lock
+    if _tagger_lock is None:
+        _tagger_lock = asyncio.Lock()
+    return _tagger_lock
+
+
+async def get_or_load_tagger() -> WD14Eva02Tagger:
+    global _tagger
+    lock = _get_tagger_lock()
+    async with lock:
+        if _tagger is None:
+            _tagger = await asyncio.to_thread(WD14Eva02Tagger)
+    return _tagger
+
+
+def _do_unload_tagger() -> None:
+    global _tagger, _tagger_unload_handle
+    _tagger = None
+    _tagger_unload_handle = None
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    print("WD14 unloaded.")
+
+
+def schedule_tagger_unload() -> None:
+    global _tagger_unload_handle
+    if _tagger_unload_handle is not None:
+        _tagger_unload_handle.cancel()
+    loop = asyncio.get_running_loop()
+    _tagger_unload_handle = loop.call_later(TAGGER_IDLE_UNLOAD_SECONDS, _do_unload_tagger)
 
 
 @asynccontextmanager
@@ -30,7 +74,6 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-tagger = WD14Eva02Tagger()
 text_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
 
@@ -64,8 +107,10 @@ def health():
 
 @app.post("/tag")
 async def get_tags(file: UploadFile = File(...)):
+  tagger = await get_or_load_tagger()
   contents = await file.read()
-  tags = tagger.predict(contents)
+  tags = await asyncio.to_thread(tagger.predict, contents)
+  schedule_tagger_unload()
   return {"tags": tags}
 
 

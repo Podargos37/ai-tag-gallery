@@ -160,7 +160,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto flex justify-center">
-          <div className="w-full max-w-7xl">
+          <div className="w-full">
             <GalleryGrid
               images={filteredImages}
               isSearching={isSearching}

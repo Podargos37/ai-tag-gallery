@@ -50,20 +50,29 @@ export default function ImageDetailsSidebar({
   };
 
   return (
-    <div className="w-full md:w-80 lg:w-96 bg-slate-900 border-l border-white/5 flex flex-col">
-      <header className="p-6 border-b border-white/5 flex justify-between items-start text-white">
+    <div
+      className="w-full md:w-80 lg:w-96 border-l flex flex-col"
+      style={{ backgroundColor: "var(--sidebar-bg)", borderColor: "var(--surface-border)" }}
+    >
+      <header
+        className="p-6 border-b flex justify-between items-start"
+        style={{ borderColor: "var(--surface-border)", color: "var(--foreground)" }}
+      >
         <div className="overflow-hidden">
           <h3 className="font-semibold truncate mb-1">{image.originalName}</h3>
-          <p className="text-white/40 text-xs flex items-center gap-1">
+          <p className="text-xs flex items-center gap-1 opacity-60">
             <Calendar className="w-3 h-3" /> {image.createdAt ? new Date(image.createdAt).toLocaleDateString() : '-'}
           </p>
         </div>
-        <button onClick={onClose} className="text-white/50 hover:text-white">
+        <button onClick={onClose} className="opacity-50 hover:opacity-100 transition" style={{ color: "var(--foreground)" }}>
           <X className="w-6 h-6" />
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-8">
+      <div
+        className="flex-1 overflow-y-auto p-6 space-y-8"
+        style={{ color: "var(--foreground)" }}
+      >
         <MetadataSection id={image.id} filename={image.filename} />
 
         <TagSection id={image.id} tags={image.tags ?? []} onTagsSaved={handleTagsSaved} />

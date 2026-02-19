@@ -30,15 +30,22 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       aria-labelledby="settings-title"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-4xl h-[85vh] min-h-[520px] flex flex-col rounded-2xl bg-slate-900 border border-white/10 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between shrink-0 border-b border-white/10 px-4 py-3">
-          <h2 id="settings-title" className="text-lg font-semibold text-white">
+      <div
+        className="w-full max-w-4xl h-[85vh] min-h-[520px] flex flex-col rounded-2xl border shadow-xl overflow-hidden"
+        style={{ backgroundColor: "var(--modal-bg)", borderColor: "var(--surface-border)" }}
+      >
+        <div
+          className="flex items-center justify-between shrink-0 border-b px-4 py-3"
+          style={{ borderColor: "var(--surface-border)" }}
+        >
+          <h2 id="settings-title" className="text-lg font-semibold" style={{ color: "var(--foreground)" }}>
             설정
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition"
+            className="p-2 rounded-lg transition opacity-60 hover:opacity-100 hover:bg-[var(--surface)]"
+            style={{ color: "var(--foreground)" }}
             aria-label="닫기"
           >
             <X className="w-5 h-5" />
@@ -46,7 +53,10 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         </div>
 
         <div className="flex flex-1 min-h-0">
-          <nav className="w-40 shrink-0 border-r border-white/10 py-3 flex flex-col gap-0.5">
+          <nav
+            className="w-40 shrink-0 border-r py-3 flex flex-col gap-0.5"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
             {SECTIONS.map(({ id, label, icon }) => (
               <button
                 key={id}
@@ -54,9 +64,10 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                 onClick={() => setSection(id)}
                 className={`flex items-center gap-2 px-4 py-2.5 text-left text-sm transition ${
                   section === id
-                    ? "bg-indigo-600/30 text-white border-r-2 border-indigo-400"
-                    : "text-white/70 hover:bg-white/5 hover:text-white"
+                    ? "bg-indigo-600/30 border-r-2 border-indigo-400"
+                    : "opacity-70 hover:opacity-100 hover:bg-[var(--surface)]"
                 }`}
+                style={{ color: "var(--foreground)", backgroundColor: section === id ? undefined : "transparent" }}
               >
                 {icon}
                 {label}

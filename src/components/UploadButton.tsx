@@ -69,7 +69,8 @@ export default function UploadButton() {
         <button
           onClick={handleFolderClick}
           disabled={isUploading}
-          className="bg-white/10 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white/15 transition-all ml-2 flex items-center gap-2 disabled:opacity-50 active:scale-95 shadow-sm border border-white/10"
+          className="px-4 py-1.5 rounded-full text-sm font-medium transition-all ml-2 flex items-center gap-2 disabled:opacity-50 active:scale-95 shadow-sm border hover:opacity-90"
+          style={{ backgroundColor: "var(--surface)", color: "var(--foreground)", borderColor: "var(--surface-border)" }}
           title="폴더 업로드 (크롬/엣지 권장)"
         >
           {isUploading ? (

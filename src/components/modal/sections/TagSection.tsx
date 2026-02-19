@@ -46,7 +46,7 @@ export const TagSection = ({ id, tags, onTagsSaved }: TagSectionProps) => {
 
   return (
     <section className={isUpdating ? "opacity-50 pointer-events-none" : ""}>
-      <h4 className="text-white/20 text-[10px] uppercase font-bold mb-4 flex items-center gap-2">
+      <h4 className="text-[10px] uppercase font-bold mb-4 flex items-center gap-2 opacity-50">
         <TagIcon className="w-3 h-3" /> Tags
       </h4>
 
@@ -55,11 +55,12 @@ export const TagSection = ({ id, tags, onTagsSaved }: TagSectionProps) => {
         {tags.map((t) => (
           <span
             key={t}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 text-indigo-300 rounded-lg text-xs border border-indigo-500/20"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-indigo-500/20"
+            style={{ backgroundColor: "rgba(99, 102, 241, 0.1)", color: "var(--accent)" }}
           >
             #{t}
             <X
-              className="w-3 h-3 cursor-pointer hover:text-red-400 transition-colors"
+              className="w-3 h-3 cursor-pointer hover:text-red-500 transition-colors"
               onClick={() => saveTags(tags.filter((tag) => tag !== t))}
             />
           </span>
@@ -73,7 +74,8 @@ export const TagSection = ({ id, tags, onTagsSaved }: TagSectionProps) => {
         onChange={(e) => setNewTag(e.target.value)}
         onKeyDown={handleAddTag}
         placeholder={isUpdating ? "저장 중..." : "태그 입력 후 엔터 (쉼표로 여러 개)"}
-        className="w-full bg-black/20 border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500/50 transition-all"
+        className="w-full rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:opacity-50"
+        style={{ backgroundColor: "var(--surface)", borderColor: "var(--surface-border)", color: "var(--foreground)", borderWidth: "1px" }}
       />
     </section>
   );

@@ -51,9 +51,10 @@ export default function ImageModal({
 
       <div
         ref={modalRef}
-        className={`relative w-full max-w-6xl h-full max-h-[85vh] bg-slate-900/90 rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex flex-col md:flex-row transition-[max-width,max-height,border-radius] min-h-0 ${
+        className={`relative w-full max-w-6xl h-full max-h-[85vh] rounded-3xl overflow-hidden border shadow-2xl flex flex-col md:flex-row transition-[max-width,max-height,border-radius] min-h-0 ${
           isFullscreen ? "!max-w-none !max-h-none !rounded-none w-full h-full" : ""
         }`}
+        style={{ backgroundColor: "var(--modal-bg)", borderColor: "var(--surface-border)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 모바일: 닫기 버튼 (사이드바 없을 때) */}

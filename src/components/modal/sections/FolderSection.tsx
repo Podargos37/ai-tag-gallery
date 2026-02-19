@@ -19,10 +19,10 @@ export function FolderSection({
   if (folders.length === 0) {
     return (
       <section>
-        <h4 className="text-white/20 text-[10px] uppercase font-bold mb-4 flex items-center gap-2">
+        <h4 className="text-[10px] uppercase font-bold mb-4 flex items-center gap-2 opacity-50">
           <Folder className="w-3 h-3" /> 폴더
         </h4>
-        <p className="text-white/40 text-xs">생성된 폴더가 없습니다. 왼쪽 사이드바에서 새 폴더를 만드세요.</p>
+        <p className="text-xs opacity-60">생성된 폴더가 없습니다. 왼쪽 사이드바에서 새 폴더를 만드세요.</p>
       </section>
     );
   }
@@ -38,24 +38,24 @@ export function FolderSection({
 
   return (
     <section>
-      <h4 className="text-white/20 text-[10px] uppercase font-bold mb-4 flex items-center gap-2">
+      <h4 className="text-[10px] uppercase font-bold mb-4 flex items-center gap-2 opacity-50">
         <Folder className="w-3 h-3" /> 폴더
       </h4>
-      <p className="text-white/40 text-xs mb-3">이미지를 넣을 폴더를 선택하세요.</p>
+      <p className="text-xs mb-3 opacity-60">이미지를 넣을 폴더를 선택하세요.</p>
       <ul className="space-y-1.5">
         {folders.map((folder) => {
           const checked = folder.imageIds.includes(imageId);
           return (
             <li key={folder.id}>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-white/80 hover:text-white transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer text-sm opacity-90 hover:opacity-100 transition-opacity">
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggle(folder)}
-                  className="rounded border-white/20 bg-slate-800 text-indigo-500 focus:ring-indigo-500/50"
+                  className="rounded border-2 border-[var(--surface-border)] bg-[var(--surface)] text-indigo-500 focus:ring-indigo-500/50"
                 />
                 <span className="truncate">{folder.name}</span>
-                <span className="text-white/40 text-xs shrink-0">({folder.imageIds.length})</span>
+                <span className="text-xs shrink-0 opacity-60">({folder.imageIds.length})</span>
               </label>
             </li>
           );

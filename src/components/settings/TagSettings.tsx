@@ -73,16 +73,16 @@ export default function TagSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-white/60">
+      <div className="flex items-center gap-2 text-sm opacity-60" style={{ color: "var(--foreground)" }}>
         <Loader2 className="w-4 h-4 animate-spin" />
-        <span className="text-sm">불러오는 중...</span>
+        <span>불러오는 중...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-white/70">
+    <div className="space-y-4" style={{ color: "var(--foreground)" }}>
+      <p className="text-sm opacity-70">
         업로드 시 WD14가 추천한 태그 중 아래 목록에 있는 태그는 자동으로 제외됩니다.
       </p>
       <div className="flex gap-2">
@@ -92,7 +92,8 @@ export default function TagSettings() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), add())}
           placeholder="제외할 태그 입력 (쉼표로 여러 개)"
-          className="flex-1 rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder:opacity-40"
+          style={{ backgroundColor: "var(--surface)", borderColor: "var(--surface-border)", color: "var(--foreground)" }}
         />
         <button
           type="button"
@@ -104,20 +105,24 @@ export default function TagSettings() {
           {saving ? "저장 중..." : "추가"}
         </button>
       </div>
-      <ul className="space-y-1.5 max-h-48 overflow-y-auto rounded-lg border border-white/10 bg-white/5 p-2">
+      <ul
+        className="space-y-1.5 max-h-48 overflow-y-auto rounded-lg border p-2"
+        style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface)" }}
+      >
         {tags.length === 0 ? (
-          <li className="text-sm text-white/40 py-2 text-center">제외 목록이 비어 있습니다.</li>
+          <li className="text-sm py-2 text-center opacity-40">제외 목록이 비어 있습니다.</li>
         ) : (
           tags.map((tag, i) => (
             <li
               key={`${tag}-${i}`}
-              className="flex items-center justify-between gap-2 rounded-md bg-white/5 px-3 py-2 text-sm text-white"
+              className="flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm"
+              style={{ backgroundColor: "var(--surface)" }}
             >
               <span className="truncate">{tag}</span>
               <button
                 type="button"
                 onClick={() => remove(i)}
-                className="p-1 rounded text-white/60 hover:text-white hover:bg-white/10 transition shrink-0"
+                className="p-1 rounded opacity-60 hover:opacity-100 hover:bg-[var(--surface)] transition shrink-0"
                 aria-label={`${tag} 제거`}
               >
                 <X className="w-4 h-4" />
@@ -127,8 +132,8 @@ export default function TagSettings() {
         )}
       </ul>
 
-      <div className="pt-4 border-t border-white/10">
-        <p className="text-sm text-white/60 mb-2">
+      <div className="pt-4 border-t" style={{ borderColor: "var(--surface-border)" }}>
+        <p className="text-sm opacity-60 mb-2">
           이미 저장된 이미지에서도 위 제외 목록 태그를 완전 일치로 일괄 제거할 수 있습니다.
         </p>
         <button

@@ -1,12 +1,138 @@
 @import "tailwindcss";
 
-:root {
-  /* 배경은 아주 어두운 회색, 글자는 흰색 계열로 고정 */
+:root,
+[data-theme="indigo"] {
   --background: #1e1b4b;
   --foreground: #ffffff;
-  /* 커스텀 스크롤바 */
+  --accent: #a5b4fc;
+  --header-bg: #312e81;
+  --header-border: rgba(255, 255, 255, 0.1);
+  --modal-bg: #0f172a;
+  --sidebar-bg: #0f172a;
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-border: rgba(255, 255, 255, 0.1);
   --scrollbar-track: rgba(255, 255, 255, 0.05);
   --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="gray"] {
+  --background: #1f2937;
+  --foreground: #f9fafb;
+  --accent: #a5b4fc;
+  --header-bg: #111827;
+  --header-border: rgba(255, 255, 255, 0.1);
+  --modal-bg: #111827;
+  --sidebar-bg: #111827;
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-border: rgba(255, 255, 255, 0.1);
+  --scrollbar-track: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="light"] {
+  --background: #f3f4f6;
+  --foreground: #111827;
+  --accent: #4338c2;
+  --header-bg: #ffffff;
+  --header-border: #e5e7eb;
+  --modal-bg: #ffffff;
+  --sidebar-bg: #f9fafb;
+  --surface: rgba(0, 0, 0, 0.05);
+  --surface-border: #e5e7eb;
+  --scrollbar-track: #f3f4f6;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-thumb-hover: #9ca3af;
+}
+
+[data-theme="ocean"] {
+  --background: #0f766e;
+  --foreground: #f0fdfa;
+  --accent: #2dd4bf;
+  --header-bg: #115e59;
+  --header-border: rgba(255, 255, 255, 0.12);
+  --modal-bg: #134e4a;
+  --sidebar-bg: #134e4a;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-border: rgba(255, 255, 255, 0.12);
+  --scrollbar-track: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="sunset"] {
+  --background: #7c2d12;
+  --foreground: #fffbeb;
+  --accent: #fbbf24;
+  --header-bg: #9a3412;
+  --header-border: rgba(255, 255, 255, 0.12);
+  --modal-bg: #431407;
+  --sidebar-bg: #431407;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-border: rgba(255, 255, 255, 0.12);
+  --scrollbar-track: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="forest"] {
+  --background: #14532d;
+  --foreground: #f0fdf4;
+  --accent: #4ade80;
+  --header-bg: #052e16;
+  --header-border: rgba(255, 255, 255, 0.1);
+  --modal-bg: #052e16;
+  --sidebar-bg: #052e16;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-border: rgba(255, 255, 255, 0.1);
+  --scrollbar-track: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.22);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="rose"] {
+  --background: #881337;
+  --foreground: #fff1f2;
+  --accent: #fda4af;
+  --header-bg: #9f1239;
+  --header-border: rgba(255, 255, 255, 0.12);
+  --modal-bg: #4c0519;
+  --sidebar-bg: #4c0519;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-border: rgba(255, 255, 255, 0.12);
+  --scrollbar-track: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="midnight"] {
+  --background: #0c0a1d;
+  --foreground: #e0e7ff;
+  --accent: #60a5fa;
+  --header-bg: #1e1b4b;
+  --header-border: rgba(255, 255, 255, 0.1);
+  --modal-bg: #0c0a1d;
+  --sidebar-bg: #0c0a1d;
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-border: rgba(255, 255, 255, 0.1);
+  --scrollbar-track: rgba(255, 255, 255, 0.05);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="lavender"] {
+  --background: #581c87;
+  --foreground: #f5f3ff;
+  --accent: #c4b5fd;
+  --header-bg: #6b21a8;
+  --header-border: rgba(255, 255, 255, 0.12);
+  --modal-bg: #3b0764;
+  --sidebar-bg: #3b0764;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-border: rgba(255, 255, 255, 0.12);
+  --scrollbar-track: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.22);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.35);
 }
 

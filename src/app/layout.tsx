@@ -4,6 +4,7 @@ import UploadButton from "@/components/UploadButton";
 import MobileLinkButton from "@/components/MobileLinkButton";
 import SettingsButton from "@/components/SettingsButton";
 import ThemeInit from "@/components/ThemeInit";
+import { THEME_KEY, THEME_IDS, DEFAULT_THEME } from "@/constants/themes";
 
 export const metadata: Metadata = {
   title: "AI-Tag-Gallery",
@@ -15,7 +16,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const themeScript = `(function(){var t=localStorage.getItem('theme');var v=['indigo','gray','light','ocean','sunset','forest','rose','midnight','lavender'];var ok=v.indexOf(t)!==-1;document.documentElement.setAttribute('data-theme',ok?t:'indigo');})();`;
+  const themeScript = `(function(){var t=localStorage.getItem(${JSON.stringify(THEME_KEY)});var v=${JSON.stringify([...THEME_IDS])};var ok=v.indexOf(t)!==-1;document.documentElement.setAttribute('data-theme',ok?t:${JSON.stringify(DEFAULT_THEME)});})();`;
 
   return (
     <html lang="ko" suppressHydrationWarning>

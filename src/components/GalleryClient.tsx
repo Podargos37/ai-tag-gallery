@@ -114,6 +114,10 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     }
   }, []);
 
+  const handleImageCreated = useCallback((newImage: ImageItem) => {
+    setImages((prev) => [newImage, ...prev]);
+  }, []);
+
   const handleBulkDelete = async () => {
     const count = selectedIds.size;
     if (count === 0) return;
@@ -238,6 +242,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
           onAddImageToFolder={addImageToFolder}
           onRemoveImageFromFolder={removeImageFromFolder}
           onDelete={handleDeleteFromModal}
+          onImageCreated={handleImageCreated}
         />
       )}
     </div>

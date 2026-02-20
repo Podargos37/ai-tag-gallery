@@ -1,56 +1,82 @@
 @echo off
+chcp 65001 >nul
 set PROJECT_ROOT=%~dp0
 set "PATH=%PROJECT_ROOT%bin\node-v25.6.9-win-x64;%PATH%"
 cd /d %PROJECT_ROOT%
 
-echo [1/2] Checking Environments...
+echo ========================================
+echo   AI Tag Gallery - Run
+echo ========================================
+echo.
 
-:: Node.js가 시스템에 있는지 재확인
-where node >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERROR] Node.js is installed but not found in PATH.
-    echo Please restart your CMD or check your Environment Variables.
+:: ----------------------------------------
+:: 사전 조건 확인
+:: ----------------------------------------
+if not exist ".venv" (
+    echo [ERROR] Virtual environment not found.
+    echo         Please run 'setup.bat' first.
     pause
-    exit /b
+    exit /b 1
 )
 
-:: 프론트엔드 의존성 동기화 (없으면 설치, 있으면 빠르게 확인만 — pull 후 새 패키지도 자동 반영)
-echo [INFO] Syncing frontend dependencies...
-call npm install
+if not exist "node_modules" (
+    echo [ERROR] Node modules not found.
+    echo         Please run 'setup.bat' first.
+    pause
+    exit /b 1
+)
 
-:: Python 가상환경 및 requirements 체크
+:: 가상환경 활성화
 call .venv\Scripts\activate
-if exist "requirements.txt" (
-    pip install -r requirements.txt
-)
 
-echo [2/2] Building and launching...
-
-:: 배포용 프로덕션 빌드 (최초 또는 코드 변경 시 수 분 소요)
+:: ----------------------------------------
+:: 빌드
+:: ----------------------------------------
+echo [1/3] Building frontend...
 call npm run build
 if %errorlevel% neq 0 (
     echo [ERROR] Frontend build failed.
+    echo         Try running 'setup.bat' to reinstall dependencies.
     pause
-    exit /b
+    exit /b 1
 )
+echo        Build complete.
+echo.
 
-
-:: AI 서버 실행
+:: ----------------------------------------
+:: AI 백엔드 실행
+:: ----------------------------------------
+echo [2/3] Starting AI backend...
 start "AI_BACKEND" cmd /k "cd /d %PROJECT_ROOT%server && ..\.venv\Scripts\activate && python main.py"
 
-:: AI 서버가 응답할 때까지 대기 (WD14 등 로딩)
-echo Waiting for AI backend...
+echo        Waiting for AI backend to be ready...
 :wait_backend
-timeout /t 5 /nobreak >nul
+timeout /t 3 /nobreak >nul
 curl -s -f http://127.0.0.1:8000/health >nul 2>&1
 if %errorlevel% equ 0 goto backend_ready
 goto wait_backend
 :backend_ready
-echo AI backend is ready.
+echo        AI backend is ready.
+echo.
 
-:: 프론트엔드 프로덕션 서버 실행
-start "NEXTJS_FRONTEND" cmd /k "cd /d %PROJECT_ROOT% && call npm run start"
+:: ----------------------------------------
+:: 프론트엔드 실행
+:: ----------------------------------------
+echo [3/3] Starting frontend...
+start "NEXTJS_FRONTEND" cmd /k "cd /d %PROJECT_ROOT% && npm run start"
 
+:: 브라우저 열기
+timeout /t 2 /nobreak >nul
 start http://localhost:3000
 
-echo All systems go!
+echo.
+echo ========================================
+echo   All systems go!
+echo ========================================
+echo.
+echo   Frontend: http://localhost:3000
+echo   Backend:  http://localhost:8000
+echo.
+echo   To stop: close the terminal windows
+echo            (AI_BACKEND, NEXTJS_FRONTEND)
+echo.

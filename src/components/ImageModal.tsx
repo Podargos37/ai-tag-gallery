@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { X } from "lucide-react";
 import ImagePane from "./modal/ImagePane";
 import ImageDetailsSidebar from "./modal/ImageDetailsSidebar";
+import NukkiEditor from "./nukki/NukkiEditor";
 import { useImageModalEffects } from "@/hooks/useImageModalEffects";
 import type { Folder } from "@/types/folders";
 import type { ImageItem } from "@/types/gallery";
@@ -20,6 +22,7 @@ export interface ImageModalProps {
   onAddImageToFolder?: (folderId: string, imageId: string) => void;
   onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
   onDelete?: (image: ImageItem) => void | Promise<void>;
+  onImageCreated?: (newImage: ImageItem) => void;
 }
 
 export default function ImageModal({
@@ -35,7 +38,10 @@ export default function ImageModal({
   onAddImageToFolder,
   onRemoveImageFromFolder,
   onDelete,
+  onImageCreated,
 }: ImageModalProps) {
+  const [isNukkiEditorOpen, setIsNukkiEditorOpen] = useState(false);
+
   const {
     isSlideshowPlaying,
     setIsSlideshowPlaying,
@@ -51,6 +57,14 @@ export default function ImageModal({
   const handleClose = () => {
     setIsSlideshowPlaying(false);
     onClose();
+  };
+
+  const handleNukkiComplete = (newImage: ImageItem) => {
+    setIsNukkiEditorOpen(false);
+    if (onImageCreated) {
+      onImageCreated(newImage);
+    }
+    alert("누끼 추출 완료! 새 이미지가 갤러리에 추가되었습니다.");
   };
 
   return (
@@ -101,10 +115,21 @@ export default function ImageModal({
               onAddImageToFolder={onAddImageToFolder}
               onRemoveImageFromFolder={onRemoveImageFromFolder}
               onDelete={onDelete}
+              onImageCreated={onImageCreated}
+              onOpenNukki={() => setIsNukkiEditorOpen(true)}
             />
           </div>
         )}
       </div>
+
+      {/* 누끼 에디터 */}
+      {isNukkiEditorOpen && (
+        <NukkiEditor
+          image={image}
+          onClose={() => setIsNukkiEditorOpen(false)}
+          onComplete={handleNukkiComplete}
+        />
+      )}
     </div>
   );
 }

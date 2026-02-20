@@ -56,7 +56,23 @@
 
 - 이미지와 메타데이터는 사용자 환경에서만 처리됩니다. 외부 AI API나 클라우드 저장소를 사용하지 않습니다.
 
-### 7. 휴대폰에서 접속 (Cloudflare 터널 + QR 코드)
+### 7. 도구
+
+#### 파일 변환
+- 이미지를 **PNG, JPG, WebP** 형식으로 변환할 수 있습니다.
+- JPG, WebP는 품질(1~100)을 슬라이더로 조절 가능합니다.
+- 변환된 이미지는 새 이미지로 갤러리에 추가됩니다.
+
+#### 업스케일 (Real-ESRGAN)
+- **Real-ESRGAN** AI 모델로 이미지 해상도를 향상시킵니다.
+- 슬라이더로 **1.5x ~ 4.0x** 배율을 0.1 단위로 자유롭게 선택할 수 있습니다.
+- GPU가 있으면 빠르게 처리되며, CPU만으로도 동작합니다.
+- 업스케일된 이미지는 새 이미지로 갤러리에 추가됩니다.
+
+#### 누끼 (배경 제거)
+- *추가 예정*
+
+### 8. 휴대폰에서 접속 (Cloudflare 터널 + QR 코드)
 
 - **Cloudflare Quick Tunnel**을 이용해 로컬 갤러리를 인터넷에서 접근 가능한 임시 URL로 열어 둡니다.
 - Python 서버 실행 시 터널이 자동으로 뜨며, **cloudflared** 바이너리가 없으면 프로젝트 `bin/`에 자동 다운로드됩니다. (별도 Cloudflare 계정 불필요, Zero-Configuration)
@@ -91,6 +107,7 @@
 | 이미지 태깅 | WD-v3 ViT-Eva02-Large-Tagger (transformers, ONNX 등) |
 | 텍스트 임베딩 (시맨틱 검색) | sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2) |
 | 이미지 임베딩 (유사 이미지 검색) | sentence-transformers (CLIP ViT-B/32) |
+| 이미지 업스케일 | Real-ESRGAN (PyTorch) |
 | 벡터 검색 | LanceDB (로컬 디스크) |
 
 - PyTorch는 CPU/GPU 환경에 맞게 **별도 설치**합니다. (requirements.txt에는 포함되지 않음.)
@@ -115,6 +132,12 @@
    - 유사 이미지 검색 시 L2 거리로 가장 가까운 이미지를 찾는 데 사용됩니다.  
    - 약 600MB 수준이며, 노트북 CPU에서도 동작합니다.
 
+4. **이미지 업스케일**  
+   [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) (RealESRGAN_x4plus_anime_6B)  
+   - AI 기반 이미지 초해상도(Super Resolution) 모델입니다.  
+   - 1.5x ~ 4.0x 배율로 이미지 해상도를 향상시킵니다.  
+   - 첫 사용 시 모델이 자동 다운로드됩니다 (~17MB).
+
 ---
 
 
@@ -137,69 +160,75 @@
 - **Python** 3.10 이상
 - **(선택)** NVIDIA GPU + CUDA — 태깅·임베딩 속도 향상용. CPU만으로도 동작합니다.
 
-### 설치
+### 설치 및 실행 (Windows)
 
-1. **저장소 클론**
+1. **저장소 클론** 또는 ZIP 다운로드
 
    ```bash
    git clone https://github.com/Podargos37/ai-tag-gallery.git
    cd ai-tag-gallery
    ```
 
-2. **Node 의존성 설치**
+2. **초기 설정** — `setup.bat` 더블 클릭 (또는 PowerShell에서 `.\setup.bat`)
+   - Node.js, Python 확인
+   - 가상환경(.venv) 생성
+   - Python/Node 의존성 설치
+   - Git 저장소인 경우 자동으로 `git pull` 실행
+
+3. **PyTorch 설치** (환경에 맞게 하나만)
 
    ```bash
-   npm install
+   # CPU
+   pip install torch torchvision
+
+   # GPU (CUDA 12.1)
+   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
    ```
+   다른 CUDA 버전: [PyTorch 설치 페이지](https://pytorch.org/get-started/locally/) 참고.
 
-3. **Python 가상환경 및 의존성**
+4. **실행** — `run.bat` 더블 클릭
+   - Next.js 빌드 및 실행 (포트 3000)
+   - Python AI 서버 실행 (포트 8000)
+   - 브라우저 자동 열림
 
-   ```bash
-   python -m venv .venv
-   # Windows
-   .venv\Scripts\activate
-   # macOS/Linux
-   source .venv/bin/activate
-
-   pip install -r requirements.txt
-   ```
-
-4. **PyTorch 설치 (환경에 맞게 하나만)**
-
-   - **CPU**:  
-     `pip install torch torchvision`
-   - **GPU (CUDA 12.1)**:  
-     `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121`  
-   - 다른 CUDA 버전: [PyTorch 설치 페이지](https://pytorch.org/get-started/locally/) 참고.
+> **업데이트**: `setup.bat`을 다시 실행하면 `git pull` + 의존성 동기화가 자동으로 됩니다.
 
 ---
 
 ## 실행 방법
 
-### 한 번에 실행 (Windows)
+### Windows (권장)
 
-- 루트의 **`run.bat`** 더블 클릭.  
-  - Next.js(3000), Python FastAPI(8000)를 띄우고, 필요 시 의존성 설치를 시도합니다.
+| 파일 | 용도 |
+|------|------|
+| `setup.bat` | 초기 설정 및 업데이트 (의존성 설치, git pull) |
+| `run.bat` | 앱 실행 (빌드 → 서버 시작 → 브라우저 열기) |
 
-### 수동 실행
+### 수동 실행 (macOS/Linux 또는 개발용)
 
-1. **Next.js** (터미널 1)
+1. **Python 가상환경 활성화**
+
+   ```bash
+   # Windows
+   .venv\Scripts\activate
+   # macOS/Linux
+   source .venv/bin/activate
+   ```
+
+2. **Next.js** (터미널 1)
 
    ```bash
    npm run dev
    ```
 
-2. **Python AI 서버** (터미널 2, `server` 디렉터리 또는 프로젝트 루트에서)
+3. **Python AI 서버** (터미널 2)
 
    ```bash
    cd server
    python main.py
    ```
 
-   - 기본: `http://0.0.0.0:8000`  
-   - Next는 `http://localhost:3000`에서 접속.
-
-3. 브라우저에서 **http://localhost:3000** 접속.
+4. 브라우저에서 **http://localhost:3000** 접속.
 
 ---
 

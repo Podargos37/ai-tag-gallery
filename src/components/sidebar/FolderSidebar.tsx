@@ -15,6 +15,7 @@ interface FolderSidebarProps {
   onSelectFolder: (id: string | null) => void;
   onAddFolder: (name: string) => void;
   onDeleteFolder: (id: string) => void;
+  onAddImagesToFolder?: (folderId: string, imageIds: string[]) => void;
   loading?: boolean;
   unfolderedCount?: number;
   /** 모바일 드로어로 띄울 때 true → 배경+닫기 버튼 */
@@ -28,6 +29,7 @@ export default function FolderSidebar({
   onSelectFolder,
   onAddFolder,
   onDeleteFolder,
+  onAddImagesToFolder,
   loading = false,
   unfolderedCount = 0,
   variant = "inline",
@@ -84,6 +86,7 @@ export default function FolderSidebar({
                 selected={selectedFolderId === folder.id}
                 onSelect={() => onSelectFolder(folder.id)}
                 onDelete={() => onDeleteFolder(folder.id)}
+                onAddImages={onAddImagesToFolder}
               />
             ))}
             <AddFolderBlock onAddFolder={onAddFolder} />

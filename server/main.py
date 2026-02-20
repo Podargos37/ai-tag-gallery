@@ -2,7 +2,7 @@
 import asyncio
 import gc
 import threading
-from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional
 
 import torch
@@ -14,7 +14,12 @@ from tagger import WD14Eva02Tagger
 from tunnel import start_tunnel, get_tunnel_url
 
 from db import ensure_migrated, get_table
+from embedder import encode_image_path
+from contextlib import asynccontextmanager
 from schema import VECTOR_DIM
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+UPLOAD_DIR = PROJECT_ROOT / "public" / "uploads"
 
 # 마이그레이션 후 이미지 행 삽입용 0 벡터
 ZERO_VECTOR = [0.0] * VECTOR_DIM
@@ -102,6 +107,11 @@ class ImageCreateBody(BaseModel):
 
 class BulkRemoveTagsBody(BaseModel):
   tag_names: list[str]
+
+
+class SearchSimilarRequest(BaseModel):
+  imageId: str
+  limit: int = 20
 
 
 @app.post("/bulk-remove-tags")
@@ -206,7 +216,13 @@ def delete_image(id: str):
 
 
 @app.post("/images")
-def create_image(body: ImageCreateBody):
+async def create_image(body: ImageCreateBody):
+  vector = ZERO_VECTOR
+  image_path = UPLOAD_DIR / body.filename
+  if image_path.exists():
+    vec = await encode_image_path(image_path)
+    if vec and len(vec) == VECTOR_DIM:
+      vector = vec
   row = {
     "id": body.id,
     "filename": body.filename,
@@ -217,11 +233,98 @@ def create_image(body: ImageCreateBody):
     "height": body.height,
     "notes": body.notes or "",
     "createdAt": body.createdAt,
-    "vector": ZERO_VECTOR,
+    "vector": vector,
   }
   table = get_table()
   table.add([row])
   return {"success": True}
+
+
+def _is_zero_vector(vec) -> bool:
+  if vec is None:
+    return True
+  if hasattr(vec, "tolist"):
+    vec = vec.tolist()
+  try:
+    return all(abs(float(x)) < 1e-9 for x in (vec or []))
+  except (TypeError, ValueError):
+    return True
+
+
+@app.post("/search_similar")
+def search_similar(req: SearchSimilarRequest):
+  """이미지 ID로 유사 이미지 검색. LanceDB vector search."""
+  if not req.imageId or not req.imageId.strip():
+    return {"results": []}
+  table = get_table()
+  df = table.to_pandas()
+  if df.empty:
+    return {"results": []}
+  row = df[df["id"].astype(str) == str(req.imageId).strip()]
+  if row.empty:
+    return {"results": []}
+  vec = row.iloc[0].get("vector")
+  if _is_zero_vector(vec):
+    return {"results": []}
+  if hasattr(vec, "tolist"):
+    vec = vec.tolist()
+  elif hasattr(vec, "__iter__") and not isinstance(vec, (str, bytes)):
+    vec = list(vec)
+  else:
+    return {"results": []}
+  safe_id = str(req.imageId).replace("'", "''")
+  limit = max(1, min(int(req.limit), 50))
+  rs = (
+    table.search(vec)
+    .where(f"id != '{safe_id}'")
+    .limit(limit + 1)
+  )
+  try:
+    results_df = rs.to_pandas()
+  except Exception:
+    return {"results": []}
+  if results_df.empty:
+    return {"results": []}
+  results_df = results_df.drop(columns=["vector"], errors="ignore")
+  results_df["notes"] = results_df.get("notes", "").fillna("")
+  rows = results_df.head(limit).to_dict("records")
+  for d in rows:
+    if "tags" in d and hasattr(d["tags"], "tolist"):
+      d["tags"] = d["tags"].tolist()
+  return {"results": rows}
+
+
+@app.post("/backfill/embeddings")
+async def backfill_embeddings():
+  """기존 이미지에 대해 public/uploads 파일이 있으면 CLIP 벡터 계산 후 LanceDB에 반영."""
+  table = get_table()
+  df = table.to_pandas()
+  if df.empty:
+    return {"updated": 0, "skipped": 0, "failed": 0}
+  updated = 0
+  skipped = 0
+  failed = 0
+  for _, row in df.iterrows():
+    id_val = row.get("id")
+    filename = row.get("filename")
+    if id_val is None or not filename:
+      skipped += 1
+      continue
+    path = UPLOAD_DIR / str(filename).strip()
+    if not path.exists():
+      skipped += 1
+      continue
+    try:
+      vec = await encode_image_path(path)
+      if vec and len(vec) == VECTOR_DIM:
+        safe_id = str(id_val).replace("'", "''")
+        table.update(where=f"id = '{safe_id}'", values={"vector": vec})
+        updated += 1
+      else:
+        failed += 1
+    except Exception:
+      failed += 1
+  return {"updated": updated, "skipped": skipped, "failed": failed}
 
 
 @app.get("/tunnel-url")

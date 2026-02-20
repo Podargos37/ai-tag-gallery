@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Check, Copy } from "lucide-react";
+import { X, Check, Copy, Search } from "lucide-react";
 import type { ImageItem } from "@/types/gallery";
 import { DEFAULT_ASPECT_RATIO } from "@/constants/gallery";
 
@@ -12,6 +12,7 @@ interface GalleryCardProps {
   onSelectionClick?: (e: React.MouseEvent) => void;
   onToggleOneClick?: () => void;
   onDelete: (e: React.MouseEvent) => void;
+  onSearchSimilar?: (image: ImageItem) => void;
 }
 
 export default function GalleryCard({
@@ -21,6 +22,7 @@ export default function GalleryCard({
   onSelectionClick,
   onToggleOneClick,
   onDelete,
+  onSearchSimilar,
 }: GalleryCardProps) {
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
@@ -143,6 +145,22 @@ export default function GalleryCard({
             <Copy className="h-4 w-4 shrink-0" />
             {copied ? "복사됨" : "태그 복사"}
           </button>
+          {onSearchSimilar && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onSearchSimilar(image);
+                setContextMenuOpen(false);
+              }}
+              aria-label="이미지 검색"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-white hover:bg-white/10 transition-colors"
+            >
+              <Search className="h-4 w-4 shrink-0" />
+              이미지 검색
+            </button>
+          )}
         </div>
       )}
     </div>

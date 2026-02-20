@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Tag, Palette, X, Sparkles } from "lucide-react";
+import { Tag, Palette, X, Sparkles, Wrench } from "lucide-react";
 import TagSettings from "./TagSettings";
 import ThemeSettings from "./ThemeSettings";
 import AISearchSettings from "./AISearchSettings";
+import BackfillSettings from "./BackfillSettings";
 
-type SettingsSection = "tag" | "theme" | "ai";
+type SettingsSection = "tag" | "theme" | "ai" | "backfill";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode }[] = [
   { id: "tag", label: "태그", icon: <Tag className="w-4 h-4" /> },
   { id: "theme", label: "테마", icon: <Palette className="w-4 h-4" /> },
   { id: "ai", label: "AI / 검색", icon: <Sparkles className="w-4 h-4" /> },
+  { id: "backfill", label: "유지보수", icon: <Wrench className="w-4 h-4" /> },
 ];
 
 interface SettingsModalProps {
@@ -81,6 +83,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
             {section === "tag" && <TagSettings />}
             {section === "theme" && <ThemeSettings />}
             {section === "ai" && <AISearchSettings />}
+            {section === "backfill" && <BackfillSettings />}
           </div>
         </div>
       </div>

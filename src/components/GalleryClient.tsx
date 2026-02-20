@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Menu } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useDelete } from "@/hooks/useDelete";
@@ -8,7 +8,9 @@ import { useGallerySelection } from "@/hooks/useGallerySelection";
 import { useBulkTag } from "@/hooks/useBulkTag";
 import { useFolders } from "@/hooks/useFolders";
 import { useGalleryImages } from "@/hooks/useGalleryImages";
+import { searchSimilar } from "@/lib/api/search-similar";
 import ImageModal from "./ImageModal";
+import SimilarImagesDrawer from "./similar/SimilarImagesDrawer";
 import { BulkTagBar, GalleryGrid, SearchBar } from "./gallery";
 import FolderSidebarLayout from "./sidebar/FolderSidebarLayout";
 import type { ImageItem } from "@/types/gallery";
@@ -17,6 +19,10 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
   const [images, setImages] = useState<ImageItem[]>(initialImages);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [similarDrawerOpen, setSimilarDrawerOpen] = useState(false);
+  const [similarQueryImage, setSimilarQueryImage] = useState<ImageItem | null>(null);
+  const [similarResults, setSimilarResults] = useState<ImageItem[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
   const {
     folders,
     selectedFolderId,
@@ -67,6 +73,21 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     const success = await deleteImage(id, filename);
     if (!success) alert("삭제 중 오류가 발생했습니다.");
   };
+
+  const handleSearchSimilar = useCallback(async (image: ImageItem) => {
+    setSimilarQueryImage(image);
+    setSimilarResults([]);
+    setSimilarLoading(true);
+    setSimilarDrawerOpen(true);
+    try {
+      const results = await searchSimilar(image.id, 20);
+      setSimilarResults(results);
+    } catch {
+      setSimilarResults([]);
+    } finally {
+      setSimilarLoading(false);
+    }
+  }, []);
 
   const handleBulkDelete = async () => {
     const count = selectedIds.size;
@@ -153,10 +174,24 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
               onCardSelectionClick={handleCardSelectionClick}
               onCardToggleOne={handleCardToggleOne}
               onDeleteImage={handleDeleteClick}
+              onSearchSimilar={handleSearchSimilar}
             />
           </div>
         </div>
       </div>
+
+      {similarDrawerOpen && (
+        <SimilarImagesDrawer
+          open={similarDrawerOpen}
+          onClose={() => setSimilarDrawerOpen(false)}
+          queryImage={similarQueryImage}
+          results={similarResults}
+          loading={similarLoading}
+          onSelectImage={(img) => {
+            setSelectedImage(img);
+          }}
+        />
+      )}
 
       {selectedImage && (
         <ImageModal

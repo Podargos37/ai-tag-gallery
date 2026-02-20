@@ -53,6 +53,11 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     clearSelection,
     handleNavigate,
     currentIndex,
+    hasNext,
+    hasPrev,
+    isRandomSlideshow,
+    startRandomSlideshow,
+    clearRandomSlideshow,
   } = useGallerySelection(filteredImages);
 
   const bulkTag = useBulkTag(
@@ -196,11 +201,16 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
       {selectedImage && (
         <ImageModal
           image={selectedImage}
-          onClose={() => setSelectedImage(null)}
+          onClose={() => {
+            clearRandomSlideshow();
+            setSelectedImage(null);
+          }}
           onNext={() => handleNavigate("next")}
           onPrev={() => handleNavigate("prev")}
-          hasNext={currentIndex < filteredImages.length - 1}
-          hasPrev={currentIndex > 0}
+          hasNext={hasNext}
+          hasPrev={hasPrev}
+          isRandomSlideshow={isRandomSlideshow}
+          onToggleRandomSlideshow={isRandomSlideshow ? clearRandomSlideshow : startRandomSlideshow}
           folders={folders}
           onAddImageToFolder={addImageToFolder}
           onRemoveImageFromFolder={removeImageFromFolder}

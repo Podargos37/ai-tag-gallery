@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Calendar } from "lucide-react";
+import { X, Calendar, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useUpdateNotes } from "@/hooks/useUpdateNotes";
 import { MetadataSection } from "./sections/MetadataSection";
@@ -16,12 +16,14 @@ export default function ImageDetailsSidebar({
   folders = [],
   onAddImageToFolder,
   onRemoveImageFromFolder,
+  onDelete,
 }: {
   image: ImageItem;
   onClose: () => void;
   folders?: Folder[];
   onAddImageToFolder?: (folderId: string, imageId: string) => void;
   onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
+  onDelete?: (image: ImageItem) => void | Promise<void>;
 }) {
   const [notes, setNotes] = useState(image?.notes || "");
   const [metadataTick, setMetadataTick] = useState(0);
@@ -91,6 +93,22 @@ export default function ImageDetailsSidebar({
           onAddImageToFolder={onAddImageToFolder}
           onRemoveImageFromFolder={onRemoveImageFromFolder}
         />
+
+        {onDelete && (
+          <div className="pt-4 border-t" style={{ borderColor: "var(--surface-border)" }}>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!confirm("이 이미지를 삭제하시겠습니까?")) return;
+                await onDelete(image);
+              }}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium text-red-200 bg-red-500/20 border border-red-500/40 hover:bg-red-500/30 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              이미지 삭제
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -85,6 +85,20 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     }
   };
 
+  const handleDeleteFromModal = useCallback(
+    async (img: ImageItem) => {
+      const success = await deleteImage(img.id, img.filename);
+      if (success) {
+        setImages((prev) => prev.filter((i) => i.id !== img.id));
+        await removeImageIdFromAllFolders(img.id);
+        setSelectedImage(null);
+      } else {
+        alert("삭제 중 오류가 발생했습니다.");
+      }
+    },
+    [deleteImage, removeImageIdFromAllFolders, setSelectedImage]
+  );
+
   const handleSearchSimilar = useCallback(async (image: ImageItem) => {
     setSimilarQueryImage(image);
     setSimilarResults([]);
@@ -223,6 +237,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
           folders={folders}
           onAddImageToFolder={addImageToFolder}
           onRemoveImageFromFolder={removeImageFromFolder}
+          onDelete={handleDeleteFromModal}
         />
       )}
     </div>

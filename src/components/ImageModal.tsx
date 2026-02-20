@@ -19,6 +19,7 @@ export interface ImageModalProps {
   folders?: Folder[];
   onAddImageToFolder?: (folderId: string, imageId: string) => void;
   onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
+  onDelete?: (image: ImageItem) => void | Promise<void>;
 }
 
 export default function ImageModal({
@@ -33,6 +34,7 @@ export default function ImageModal({
   folders = [],
   onAddImageToFolder,
   onRemoveImageFromFolder,
+  onDelete,
 }: ImageModalProps) {
   const {
     isSlideshowPlaying,
@@ -98,6 +100,7 @@ export default function ImageModal({
               folders={folders}
               onAddImageToFolder={onAddImageToFolder}
               onRemoveImageFromFolder={onRemoveImageFromFolder}
+              onDelete={onDelete}
             />
           </div>
         )}

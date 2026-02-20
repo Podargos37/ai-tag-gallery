@@ -7,6 +7,21 @@ import { useImageModalEffects } from "@/hooks/useImageModalEffects";
 import type { Folder } from "@/types/folders";
 import type { ImageItem } from "@/types/gallery";
 
+export interface ImageModalProps {
+  image: ImageItem;
+  onClose: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+  hasNext: boolean;
+  hasPrev: boolean;
+  isRandomSlideshow?: boolean;
+  onToggleRandomSlideshow?: () => void;
+  folders?: Folder[];
+  onAddImageToFolder?: (folderId: string, imageId: string) => void;
+  onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
+  onDelete?: (image: ImageItem) => void | Promise<void>;
+}
+
 export default function ImageModal({
   image,
   onClose,
@@ -14,20 +29,13 @@ export default function ImageModal({
   onPrev,
   hasNext,
   hasPrev,
+  isRandomSlideshow = false,
+  onToggleRandomSlideshow,
   folders = [],
   onAddImageToFolder,
   onRemoveImageFromFolder,
-}: {
-  image: ImageItem;
-  onClose: () => void;
-  onNext: () => void;
-  onPrev: () => void;
-  hasNext: boolean;
-  hasPrev: boolean;
-  folders?: Folder[];
-  onAddImageToFolder?: (folderId: string, imageId: string) => void;
-  onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
-}) {
+  onDelete,
+}: ImageModalProps) {
   const {
     isSlideshowPlaying,
     setIsSlideshowPlaying,
@@ -79,6 +87,8 @@ export default function ImageModal({
           onSlideshowIntervalChange={setSlideshowIntervalMs}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
+          isRandomSlideshow={isRandomSlideshow}
+          onToggleRandomSlideshow={onToggleRandomSlideshow}
         />
 
         {/* 데스크톱만: 태그/메모/폴더 사이드바 */}
@@ -90,6 +100,7 @@ export default function ImageModal({
               folders={folders}
               onAddImageToFolder={onAddImageToFolder}
               onRemoveImageFromFolder={onRemoveImageFromFolder}
+              onDelete={onDelete}
             />
           </div>
         )}

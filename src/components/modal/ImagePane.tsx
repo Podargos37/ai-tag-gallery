@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Play, Pause, Maximize2, Minimize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Pause, Maximize2, Minimize2, Shuffle } from "lucide-react";
 import type { ImageItem } from "@/types/gallery";
 
 export default function ImagePane({
@@ -15,6 +15,8 @@ export default function ImagePane({
   onSlideshowIntervalChange,
   isFullscreen,
   onToggleFullscreen,
+  isRandomSlideshow = false,
+  onToggleRandomSlideshow,
 }: {
   image: ImageItem;
   onNext: () => void;
@@ -27,6 +29,8 @@ export default function ImagePane({
   onSlideshowIntervalChange: (ms: number) => void;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  isRandomSlideshow?: boolean;
+  onToggleRandomSlideshow?: () => void;
 }) {
   return (
     <div className="flex-1 min-h-0 flex items-center justify-center bg-black/20 relative group">
@@ -72,6 +76,21 @@ export default function ImagePane({
         >
           {isSlideshowPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </button>
+
+        {onToggleRandomSlideshow && (
+          <>
+            <div className="h-4 w-px bg-white/20" />
+            <button
+              type="button"
+              onClick={onToggleRandomSlideshow}
+              className={`p-1.5 rounded-full transition-colors ${isRandomSlideshow ? "bg-indigo-500/80 text-white" : "hover:bg-white/10"}`}
+              aria-label={isRandomSlideshow ? "랜덤 슬라이드쇼 끄기" : "랜덤 슬라이드쇼"}
+              title={isRandomSlideshow ? "순서대로 보기" : "현재 목록에서 무작위 순서로 보기"}
+            >
+              <Shuffle className="w-4 h-4" />
+            </button>
+          </>
+        )}
 
         <div className="h-4 w-px bg-white/20" />
 

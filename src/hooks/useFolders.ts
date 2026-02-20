@@ -114,6 +114,21 @@ export function useFolders() {
     [folders, persist]
   );
 
+  /** 삭제된 이미지 id를 모든 폴더의 imageIds에서 제거 (폴더 개수 동기화용) */
+  const removeImageIdFromAllFolders = useCallback(
+    async (imageId: string) => {
+      const hasAny = folders.some((f) => f.imageIds.includes(imageId));
+      if (!hasAny) return;
+      await persist(
+        folders.map((f) => ({
+          ...f,
+          imageIds: f.imageIds.filter((id) => id !== imageId),
+        }))
+      );
+    },
+    [folders, persist]
+  );
+
   return {
     folders,
     selectedFolderId,
@@ -125,6 +140,7 @@ export function useFolders() {
     addImageToFolder,
     addImagesToFolder,
     removeImageFromFolder,
+    removeImageIdFromAllFolders,
     refetch: load,
   };
 }

@@ -33,6 +33,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     addImageToFolder,
     addImagesToFolder,
     removeImageFromFolder,
+    removeImageIdFromAllFolders,
   } = useFolders();
 
   const { baseImages, unfolderedCount } = useGalleryImages(
@@ -53,6 +54,11 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     clearSelection,
     handleNavigate,
     currentIndex,
+    hasNext,
+    hasPrev,
+    isRandomSlideshow,
+    startRandomSlideshow,
+    clearRandomSlideshow,
   } = useGallerySelection(filteredImages);
 
   const bulkTag = useBulkTag(
@@ -71,8 +77,27 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     e.stopPropagation();
     if (!confirm("이미지를 삭제하시겠습니까?")) return;
     const success = await deleteImage(id, filename);
-    if (!success) alert("삭제 중 오류가 발생했습니다.");
+    if (success) {
+      setImages((prev) => prev.filter((img) => img.id !== id));
+      await removeImageIdFromAllFolders(id);
+    } else {
+      alert("삭제 중 오류가 발생했습니다.");
+    }
   };
+
+  const handleDeleteFromModal = useCallback(
+    async (img: ImageItem) => {
+      const success = await deleteImage(img.id, img.filename);
+      if (success) {
+        setImages((prev) => prev.filter((i) => i.id !== img.id));
+        await removeImageIdFromAllFolders(img.id);
+        setSelectedImage(null);
+      } else {
+        alert("삭제 중 오류가 발생했습니다.");
+      }
+    },
+    [deleteImage, removeImageIdFromAllFolders, setSelectedImage]
+  );
 
   const handleSearchSimilar = useCallback(async (image: ImageItem) => {
     setSimilarQueryImage(image);
@@ -102,6 +127,9 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
         if (ok) deletedIds.add(img.id);
       }
       setImages((prev) => prev.filter((img) => !deletedIds.has(img.id)));
+      for (const id of deletedIds) {
+        await removeImageIdFromAllFolders(id);
+      }
       if (selectedImage && deletedIds.has(selectedImage.id)) setSelectedImage(null);
       clearSelection();
       if (deletedIds.size < toDelete.length) {
@@ -127,7 +155,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
       />
 
       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-        <div className="shrink-0 space-y-4 pb-4">
+        <div className="relative z-30 shrink-0 space-y-4 pb-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -196,14 +224,20 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
       {selectedImage && (
         <ImageModal
           image={selectedImage}
-          onClose={() => setSelectedImage(null)}
+          onClose={() => {
+            clearRandomSlideshow();
+            setSelectedImage(null);
+          }}
           onNext={() => handleNavigate("next")}
           onPrev={() => handleNavigate("prev")}
-          hasNext={currentIndex < filteredImages.length - 1}
-          hasPrev={currentIndex > 0}
+          hasNext={hasNext}
+          hasPrev={hasPrev}
+          isRandomSlideshow={isRandomSlideshow}
+          onToggleRandomSlideshow={isRandomSlideshow ? clearRandomSlideshow : startRandomSlideshow}
           folders={folders}
           onAddImageToFolder={addImageToFolder}
           onRemoveImageFromFolder={removeImageFromFolder}
+          onDelete={handleDeleteFromModal}
         />
       )}
     </div>

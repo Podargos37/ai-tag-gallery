@@ -294,6 +294,112 @@ def search_similar(req: SearchSimilarRequest):
   return {"results": rows}
 
 
+def _find_duplicate_groups(table, df_with_vectors, threshold: float, max_groups: int):
+  """벡터 거리 기준으로 중복 후보 그룹을 찾아 반환. (연결 요소)"""
+  import pandas as pd
+  edges = set()
+  id_to_vec = {}
+  for _, row in df_with_vectors.iterrows():
+    vid = str(row.get("id", ""))
+    vec = row.get("vector")
+    if _is_zero_vector(vec):
+      continue
+    if hasattr(vec, "tolist"):
+      vec = vec.tolist()
+    elif hasattr(vec, "__iter__") and not isinstance(vec, (str, bytes)):
+      vec = list(vec)
+    else:
+      continue
+    id_to_vec[vid] = vec
+
+  for vid, vec in id_to_vec.items():
+    safe_id = vid.replace("'", "''")
+    try:
+      rs = (
+        table.search(vec)
+        .where(f"id != '{safe_id}'")
+        .limit(40)
+      )
+      near_df = rs.to_pandas()
+    except Exception:
+      near_df = pd.DataFrame()
+    if near_df.empty or "_distance" not in near_df.columns:
+      continue
+    for _, r in near_df.iterrows():
+      d = r.get("_distance")
+      if d is None:
+        continue
+      try:
+        dist = float(d)
+      except (TypeError, ValueError):
+        continue
+      if dist < threshold:
+        other = str(r.get("id", ""))
+        if other and other != vid:
+          edge = (min(vid, other), max(vid, other))
+          edges.add(edge)
+
+  # Union-Find for connected components
+  parent = {}
+  def find(x):
+    if x not in parent:
+      parent[x] = x
+    if parent[x] != x:
+      parent[x] = find(parent[x])
+    return parent[x]
+  def union(a, b):
+    pa, pb = find(a), find(b)
+    if pa != pb:
+      parent[pa] = pb
+  for a, b in edges:
+    union(a, b)
+  groups = {}
+  for uid in parent:
+    root = find(uid)
+    if root not in groups:
+      groups[root] = []
+    groups[root].append(uid)
+  # Only groups with at least 2 images
+  group_list = [g for g in groups.values() if len(g) >= 2]
+  group_list.sort(key=lambda g: -len(g))
+  return group_list[:max_groups]
+
+
+@app.get("/duplicate-candidates")
+def duplicate_candidates(
+  threshold: float = Query(0.2, ge=0.05, le=1.0, description="L2 distance threshold"),
+  max_groups: int = Query(50, ge=1, le=200, description="Max number of groups to return"),
+):
+  """CLIP 벡터 거리 기준 중복 후보 그룹 반환."""
+  table = get_table()
+  df = table.to_pandas()
+  if df.empty:
+    return {"groups": []}
+  df_with_vec = df[df.apply(lambda r: not _is_zero_vector(r.get("vector")), axis=1)]
+  if df_with_vec.empty:
+    return {"groups": []}
+  group_ids = _find_duplicate_groups(table, df_with_vec, threshold, max_groups)
+  # Build id -> row (without vector) for lookup
+  df_no_vec = df.drop(columns=["vector"], errors="ignore")
+  df_no_vec["notes"] = df_no_vec.get("notes", "").fillna("")
+  id_to_row = {}
+  for _, r in df_no_vec.iterrows():
+    id_to_row[str(r.get("id", ""))] = r.to_dict()
+  out_groups = []
+  for ids in group_ids:
+    rows = []
+    for iid in ids:
+      row = id_to_row.get(iid)
+      if row is None:
+        continue
+      if "tags" in row and hasattr(row["tags"], "tolist"):
+        row["tags"] = row["tags"].tolist()
+      rows.append(row)
+    if len(rows) >= 2:
+      out_groups.append(rows)
+  return {"groups": out_groups}
+
+
 @app.post("/backfill/embeddings")
 async def backfill_embeddings():
   """기존 이미지에 대해 public/uploads 파일이 있으면 CLIP 벡터 계산 후 LanceDB에 반영."""
@@ -312,6 +418,9 @@ async def backfill_embeddings():
       continue
     path = UPLOAD_DIR / str(filename).strip()
     if not path.exists():
+      skipped += 1
+      continue
+    if not _is_zero_vector(row.get("vector")):
       skipped += 1
       continue
     try:

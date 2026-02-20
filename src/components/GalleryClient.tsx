@@ -127,7 +127,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
       />
 
       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-        <div className="shrink-0 space-y-4 pb-4">
+        <div className="relative z-30 shrink-0 space-y-4 pb-4">
           <div className="flex items-center gap-3">
             <button
               type="button"

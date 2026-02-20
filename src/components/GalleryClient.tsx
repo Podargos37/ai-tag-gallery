@@ -33,6 +33,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     addImageToFolder,
     addImagesToFolder,
     removeImageFromFolder,
+    removeImageIdFromAllFolders,
   } = useFolders();
 
   const { baseImages, unfolderedCount } = useGalleryImages(
@@ -76,7 +77,12 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     e.stopPropagation();
     if (!confirm("이미지를 삭제하시겠습니까?")) return;
     const success = await deleteImage(id, filename);
-    if (!success) alert("삭제 중 오류가 발생했습니다.");
+    if (success) {
+      setImages((prev) => prev.filter((img) => img.id !== id));
+      await removeImageIdFromAllFolders(id);
+    } else {
+      alert("삭제 중 오류가 발생했습니다.");
+    }
   };
 
   const handleSearchSimilar = useCallback(async (image: ImageItem) => {
@@ -107,6 +113,9 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
         if (ok) deletedIds.add(img.id);
       }
       setImages((prev) => prev.filter((img) => !deletedIds.has(img.id)));
+      for (const id of deletedIds) {
+        await removeImageIdFromAllFolders(id);
+      }
       if (selectedImage && deletedIds.has(selectedImage.id)) setSelectedImage(null);
       clearSelection();
       if (deletedIds.size < toDelete.length) {

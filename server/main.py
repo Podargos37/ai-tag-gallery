@@ -3,10 +3,13 @@ import asyncio
 import gc
 import threading
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
+from io import BytesIO
 
 import torch
+from PIL import Image
 from fastapi import FastAPI, UploadFile, File, Query
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, util
@@ -20,6 +23,9 @@ from schema import VECTOR_DIM
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = PROJECT_ROOT / "public" / "uploads"
+THUMB_DIR = PROJECT_ROOT / "public" / "thumbnails"
+THUMB_MAX_SIZE = 400
+THUMB_WEBP_QUALITY = 75
 
 # 마이그레이션 후 이미지 행 삽입용 0 벡터
 ZERO_VECTOR = [0.0] * VECTOR_DIM
@@ -112,6 +118,12 @@ class BulkRemoveTagsBody(BaseModel):
 class SearchSimilarRequest(BaseModel):
   imageId: str
   limit: int = 20
+
+
+class ConvertRequest(BaseModel):
+  imageId: str
+  format: Literal["png", "jpg", "webp"]
+  quality: int = 85  # 1-100, used for jpg/webp
 
 
 @app.post("/bulk-remove-tags")
@@ -434,6 +446,117 @@ async def backfill_embeddings():
     except Exception:
       failed += 1
   return {"updated": updated, "skipped": skipped, "failed": failed}
+
+
+@app.post("/convert")
+async def convert_image(body: ConvertRequest):
+  """이미지를 다른 포맷으로 변환해 새 이미지로 갤러리에 추가."""
+  table = get_table()
+  df = table.to_pandas()
+  
+  # 원본 이미지 찾기
+  row = df[df["id"].astype(str) == str(body.imageId).strip()]
+  if row.empty:
+    return JSONResponse(status_code=404, content={"error": "Image not found"})
+  
+  src_row = row.iloc[0]
+  src_filename = src_row.get("filename")
+  src_path = UPLOAD_DIR / str(src_filename)
+  
+  if not src_path.exists():
+    return JSONResponse(status_code=404, content={"error": "Image file not found"})
+  
+  # 새 ID 생성 (현재 타임스탬프)
+  import time
+  new_id = str(int(time.time() * 1000))
+  
+  # 포맷별 확장자 및 저장 옵션
+  fmt = body.format.lower()
+  ext_map = {"png": ".png", "jpg": ".jpg", "webp": ".webp"}
+  new_ext = ext_map.get(fmt, ".png")
+  new_filename = f"{new_id}{new_ext}"
+  new_path = UPLOAD_DIR / new_filename
+  
+  # PIL로 변환
+  try:
+    img = Image.open(src_path)
+    # RGBA → RGB (jpg는 알파 채널 미지원)
+    if fmt == "jpg" and img.mode in ("RGBA", "LA", "P"):
+      background = Image.new("RGB", img.size, (255, 255, 255))
+      if img.mode == "P":
+        img = img.convert("RGBA")
+      background.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+      img = background
+    elif fmt != "jpg" and img.mode == "P":
+      img = img.convert("RGBA")
+    
+    width, height = img.size
+    
+    # 저장
+    save_kwargs = {}
+    if fmt == "jpg":
+      save_kwargs = {"quality": body.quality, "optimize": True}
+      img.save(new_path, "JPEG", **save_kwargs)
+    elif fmt == "webp":
+      save_kwargs = {"quality": body.quality, "method": 4}
+      img.save(new_path, "WEBP", **save_kwargs)
+    else:  # png
+      img.save(new_path, "PNG", optimize=True)
+    
+    # 썸네일 생성
+    thumb_filename = f"{new_id}.webp"
+    thumb_path = THUMB_DIR / thumb_filename
+    thumb_img = img.copy()
+    thumb_img.thumbnail((THUMB_MAX_SIZE, THUMB_MAX_SIZE), Image.Resampling.LANCZOS)
+    if thumb_img.mode in ("RGBA", "LA"):
+      # webp는 RGBA 지원하지만 배경 흰색으로 변환
+      bg = Image.new("RGB", thumb_img.size, (255, 255, 255))
+      bg.paste(thumb_img, mask=thumb_img.split()[-1] if thumb_img.mode == "RGBA" else None)
+      thumb_img = bg
+    thumb_img.save(thumb_path, "WEBP", quality=THUMB_WEBP_QUALITY)
+    
+  except Exception as e:
+    return JSONResponse(status_code=500, content={"error": f"Conversion failed: {str(e)}"})
+  
+  # 원본 이름에 포맷 정보 추가
+  src_original = src_row.get("originalName", "image")
+  src_base = Path(src_original).stem
+  new_original = f"{src_base}_converted{new_ext}"
+  
+  # 원본 태그 복사
+  src_tags = src_row.get("tags")
+  if hasattr(src_tags, "tolist"):
+    src_tags = src_tags.tolist()
+  if not isinstance(src_tags, list):
+    src_tags = []
+  
+  # CLIP 벡터 계산
+  vector = ZERO_VECTOR
+  try:
+    vec = await encode_image_path(new_path)
+    if vec and len(vec) == VECTOR_DIM:
+      vector = vec
+  except Exception:
+    pass
+  
+  # LanceDB에 등록
+  new_row = {
+    "id": new_id,
+    "filename": new_filename,
+    "thumbnail": thumb_filename,
+    "originalName": new_original,
+    "tags": src_tags,
+    "width": width,
+    "height": height,
+    "notes": "",
+    "createdAt": __import__("datetime").datetime.now().isoformat(),
+    "vector": vector,
+  }
+  table.add([new_row])
+  
+  # 응답 (vector 제외)
+  response_row = {k: v for k, v in new_row.items() if k != "vector"}
+  return {"success": True, "image": response_row}
 
 
 @app.get("/tunnel-url")

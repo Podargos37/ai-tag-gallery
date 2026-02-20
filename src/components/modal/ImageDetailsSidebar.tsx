@@ -1,7 +1,7 @@
 "use client";
 
-import { X, Calendar, Trash2, Info, Wrench, ImageUp, FileOutput, Scissors } from "lucide-react";
-import { useEffect, useState } from "react";
+import { X, Calendar, Trash2, Info, Wrench, ImageUp, FileOutput, Scissors, ChevronDown, Loader2 } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
 import { useUpdateNotes } from "@/hooks/useUpdateNotes";
 import { MetadataSection } from "./sections/MetadataSection";
 import { TagSection } from "./sections/TagSection";
@@ -17,6 +17,7 @@ export default function ImageDetailsSidebar({
   onAddImageToFolder,
   onRemoveImageFromFolder,
   onDelete,
+  onImageCreated,
 }: {
   image: ImageItem;
   onClose: () => void;
@@ -24,11 +25,49 @@ export default function ImageDetailsSidebar({
   onAddImageToFolder?: (folderId: string, imageId: string) => void;
   onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
   onDelete?: (image: ImageItem) => void | Promise<void>;
+  onImageCreated?: (newImage: ImageItem) => void;
 }) {
   const [notes, setNotes] = useState(image?.notes || "");
   const [metadataTick, setMetadataTick] = useState(0);
   const [activeTab, setActiveTab] = useState<"info" | "tools">("info");
   const { saveNotes, isSaving } = useUpdateNotes();
+
+  // 파일 변환 상태
+  const [convertExpanded, setConvertExpanded] = useState(false);
+  const [convertFormat, setConvertFormat] = useState<"png" | "jpg" | "webp">("png");
+  const [convertQuality, setConvertQuality] = useState(85);
+  const [isConverting, setIsConverting] = useState(false);
+
+  const handleConvert = useCallback(async () => {
+    if (isConverting) return;
+    setIsConverting(true);
+    try {
+      const res = await fetch("/api/convert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageId: image.id,
+          format: convertFormat,
+          quality: convertQuality,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`변환 실패: ${data.error || "알 수 없는 오류"}`);
+        return;
+      }
+      alert(`변환 완료! 새 이미지가 갤러리에 추가되었습니다.`);
+      if (onImageCreated && data.image) {
+        onImageCreated(data.image);
+      }
+      setConvertExpanded(false);
+    } catch (e) {
+      alert("변환 중 오류가 발생했습니다.");
+      console.error(e);
+    } finally {
+      setIsConverting(false);
+    }
+  }, [image.id, convertFormat, convertQuality, isConverting, onImageCreated]);
 
   useEffect(() => {
     if (image) {
@@ -166,20 +205,98 @@ export default function ImageDetailsSidebar({
             </button>
 
             {/* 파일 변환 */}
-            <button
-              type="button"
-              className="flex items-center gap-3 w-full p-4 rounded-lg border transition-colors hover:bg-white/5"
+            <div
+              className="rounded-lg border overflow-hidden"
               style={{ borderColor: "var(--surface-border)" }}
-              onClick={() => alert("파일 변환 기능 준비 중")}
             >
-              <div className="p-2 rounded-lg bg-purple-500/20">
-                <FileOutput className="w-5 h-5 text-purple-400" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">파일 변환</p>
-                <p className="text-xs opacity-60">PNG, JPG, WebP 변환</p>
-              </div>
-            </button>
+              <button
+                type="button"
+                className="flex items-center gap-3 w-full p-4 transition-colors hover:bg-white/5"
+                onClick={() => setConvertExpanded(!convertExpanded)}
+              >
+                <div className="p-2 rounded-lg bg-purple-500/20">
+                  <FileOutput className="w-5 h-5 text-purple-400" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="font-medium">파일 변환</p>
+                  <p className="text-xs opacity-60">PNG, JPG, WebP 변환</p>
+                </div>
+                <ChevronDown
+                  className={`w-5 h-5 opacity-50 transition-transform ${
+                    convertExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              
+              {convertExpanded && (
+                <div className="p-4 pt-0 space-y-4">
+                  {/* 포맷 선택 */}
+                  <div>
+                    <label className="text-xs font-medium opacity-70 mb-2 block">
+                      변환 포맷
+                    </label>
+                    <div className="flex gap-2">
+                      {(["png", "jpg", "webp"] as const).map((fmt) => (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => setConvertFormat(fmt)}
+                          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                            convertFormat === fmt
+                              ? "bg-purple-500/30 border-purple-500/50 text-purple-300"
+                              : "bg-white/5 border-white/10 hover:bg-white/10"
+                          } border`}
+                        >
+                          {fmt.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 품질 선택 (JPG, WebP만) */}
+                  {convertFormat !== "png" && (
+                    <div>
+                      <label className="text-xs font-medium opacity-70 mb-2 block">
+                        품질: {convertQuality}%
+                      </label>
+                      <input
+                        type="range"
+                        min={10}
+                        max={100}
+                        step={5}
+                        value={convertQuality}
+                        onChange={(e) => setConvertQuality(Number(e.target.value))}
+                        className="w-full accent-purple-500"
+                      />
+                      <div className="flex justify-between text-xs opacity-50 mt-1">
+                        <span>낮음 (작은 파일)</span>
+                        <span>높음 (좋은 품질)</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 변환 버튼 */}
+                  <button
+                    type="button"
+                    onClick={handleConvert}
+                    disabled={isConverting}
+                    className="w-full py-2.5 rounded-lg text-sm font-medium bg-purple-500/20 border border-purple-500/40 hover:bg-purple-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isConverting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        변환 중...
+                      </>
+                    ) : (
+                      <>
+                        <FileOutput className="w-4 h-4" />
+                        {convertFormat.toUpperCase()}로 변환
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* 누끼 (배경 제거) */}
             <button

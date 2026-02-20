@@ -154,6 +154,24 @@ class UpscaleRequest(BaseModel):
   scale: float = 2.0  # 1.5 ~ 4.0
 
 
+class PointLabel(BaseModel):
+  x: float
+  y: float
+  label: int  # 1=포함(foreground), 0=제외(background)
+
+
+class RemoveBgRequest(BaseModel):
+  imageId: str
+  points: list[PointLabel]
+  mode: Literal["extract", "remove"] = "extract"
+
+
+class RemoveBgPreviewRequest(BaseModel):
+  imageId: str
+  points: list[PointLabel]
+  mode: Literal["extract", "remove"] = "extract"
+
+
 # Real-ESRGAN PyTorch 업스케일러 (지연 로딩)
 import cv2
 import numpy as np
@@ -749,6 +767,267 @@ async def upscale_image(body: UpscaleRequest):
     pass
   
   # LanceDB에 등록
+  import datetime
+  new_row = {
+    "id": new_id,
+    "filename": new_filename,
+    "thumbnail": thumb_filename,
+    "originalName": new_original,
+    "tags": src_tags,
+    "width": width,
+    "height": height,
+    "notes": "",
+    "createdAt": datetime.datetime.now().isoformat(),
+    "vector": vector,
+  }
+  table.add([new_row])
+  
+  response_row = {k: v for k, v in new_row.items() if k != "vector"}
+  return {"success": True, "image": response_row}
+
+
+# MobileSAM 배경 제거 (지연 로딩)
+_mobilesam_model: dict = {}
+_mobilesam_lock: Optional[asyncio.Lock] = None
+
+def _get_mobilesam_lock() -> asyncio.Lock:
+  global _mobilesam_lock
+  if _mobilesam_lock is None:
+    _mobilesam_lock = asyncio.Lock()
+  return _mobilesam_lock
+
+
+def get_mobilesam():
+  """MobileSAM 모델을 캐시에서 가져오거나 새로 로드."""
+  if "predictor" in _mobilesam_model:
+    return _mobilesam_model["predictor"]
+  
+  from mobile_sam import sam_model_registry, SamPredictor
+  
+  device = "cuda" if torch.cuda.is_available() else "cpu"
+  
+  model_type = "vit_t"
+  sam_checkpoint = PROJECT_ROOT / "models" / "mobile_sam.pt"
+  
+  if not sam_checkpoint.exists():
+    import urllib.request
+    sam_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    url = "https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt"
+    print(f"Downloading MobileSAM model to {sam_checkpoint}...")
+    urllib.request.urlretrieve(url, sam_checkpoint)
+    print("Download complete.")
+  
+  mobile_sam = sam_model_registry[model_type](checkpoint=str(sam_checkpoint))
+  mobile_sam.to(device=device)
+  mobile_sam.eval()
+  
+  predictor = SamPredictor(mobile_sam)
+  _mobilesam_model["predictor"] = predictor
+  print(f"Loaded MobileSAM on {device}")
+  return predictor
+
+
+def run_mobilesam_segmentation(image_path: Path, points: list, output_path: Path, invert_mask: bool = False) -> bool:
+  """MobileSAM으로 세그멘테이션 수행 후 PNG with alpha로 저장."""
+  try:
+    img = cv2.imread(str(image_path))
+    if img is None:
+      print(f"Failed to read image: {image_path}")
+      return False
+    
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
+    predictor = get_mobilesam()
+    predictor.set_image(img_rgb)
+    
+    input_points = np.array([[p["x"], p["y"]] for p in points])
+    input_labels = np.array([p["label"] for p in points])
+    
+    masks, scores, _ = predictor.predict(
+      point_coords=input_points,
+      point_labels=input_labels,
+      multimask_output=True,
+    )
+    
+    best_idx = np.argmax(scores)
+    mask = masks[best_idx]
+    
+    if invert_mask:
+      mask = ~mask
+    
+    img_rgba = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
+    img_rgba[:, :, 3] = (mask * 255).astype(np.uint8)
+    
+    cv2.imwrite(str(output_path), img_rgba)
+    return output_path.exists()
+  except Exception as e:
+    print(f"MobileSAM error: {e}")
+    import traceback
+    traceback.print_exc()
+    return False
+
+
+def get_mobilesam_mask(image_path: Path, points: list, invert_mask: bool = False) -> Optional[np.ndarray]:
+  """MobileSAM으로 마스크만 반환 (미리보기용)."""
+  try:
+    img = cv2.imread(str(image_path))
+    if img is None:
+      return None
+    
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
+    predictor = get_mobilesam()
+    predictor.set_image(img_rgb)
+    
+    input_points = np.array([[p["x"], p["y"]] for p in points])
+    input_labels = np.array([p["label"] for p in points])
+    
+    masks, scores, _ = predictor.predict(
+      point_coords=input_points,
+      point_labels=input_labels,
+      multimask_output=True,
+    )
+    
+    best_idx = np.argmax(scores)
+    mask = masks[best_idx]
+    
+    if invert_mask:
+      mask = ~mask
+    
+    return mask
+  except Exception as e:
+    print(f"MobileSAM preview error: {e}")
+    return None
+
+
+@app.post("/remove-bg/preview")
+async def remove_bg_preview(body: RemoveBgPreviewRequest):
+  """MobileSAM으로 마스크 미리보기 (PNG 이미지로 반환)."""
+  from fastapi.responses import Response
+  import base64
+  
+  if not body.points:
+    return JSONResponse(status_code=400, content={"error": "At least one point is required"})
+  
+  table = get_table()
+  df = table.to_pandas()
+  
+  row = df[df["id"].astype(str) == str(body.imageId).strip()]
+  if row.empty:
+    return JSONResponse(status_code=404, content={"error": "Image not found"})
+  
+  src_row = row.iloc[0]
+  src_filename = src_row.get("filename")
+  src_path = UPLOAD_DIR / str(src_filename)
+  
+  if not src_path.exists():
+    return JSONResponse(status_code=404, content={"error": "Image file not found"})
+  
+  points_data = [{"x": p.x, "y": p.y, "label": p.label} for p in body.points]
+  invert_mask = body.mode == "remove"
+  
+  lock = _get_mobilesam_lock()
+  async with lock:
+    try:
+      mask = await asyncio.to_thread(
+        get_mobilesam_mask,
+        src_path,
+        points_data,
+        invert_mask
+      )
+      if mask is None:
+        return JSONResponse(status_code=500, content={"error": "Preview failed"})
+    except Exception as e:
+      return JSONResponse(status_code=500, content={"error": f"Preview failed: {str(e)}"})
+  
+  mask_img = (mask * 255).astype(np.uint8)
+  _, buffer = cv2.imencode('.png', mask_img)
+  mask_base64 = base64.b64encode(buffer).decode('utf-8')
+  
+  return {"mask": mask_base64, "width": mask.shape[1], "height": mask.shape[0]}
+
+
+@app.post("/remove-bg")
+async def remove_bg(body: RemoveBgRequest):
+  """MobileSAM으로 클릭 포인트 기반 객체 추출 후 PNG로 저장."""
+  import time
+  
+  if not body.points:
+    return JSONResponse(status_code=400, content={"error": "At least one point is required"})
+  
+  table = get_table()
+  df = table.to_pandas()
+  
+  row = df[df["id"].astype(str) == str(body.imageId).strip()]
+  if row.empty:
+    return JSONResponse(status_code=404, content={"error": "Image not found"})
+  
+  src_row = row.iloc[0]
+  src_filename = src_row.get("filename")
+  src_path = UPLOAD_DIR / str(src_filename)
+  
+  if not src_path.exists():
+    return JSONResponse(status_code=404, content={"error": "Image file not found"})
+  
+  new_id = str(int(time.time() * 1000))
+  new_filename = f"{new_id}.png"
+  new_path = UPLOAD_DIR / new_filename
+  
+  points_data = [{"x": p.x, "y": p.y, "label": p.label} for p in body.points]
+  invert_mask = body.mode == "remove"
+  
+  lock = _get_mobilesam_lock()
+  async with lock:
+    try:
+      success = await asyncio.to_thread(
+        run_mobilesam_segmentation,
+        src_path,
+        points_data,
+        new_path,
+        invert_mask
+      )
+      if not success:
+        return JSONResponse(status_code=500, content={"error": "Segmentation failed"})
+    except Exception as e:
+      return JSONResponse(status_code=500, content={"error": f"Segmentation failed: {str(e)}"})
+  
+  try:
+    result_img = Image.open(new_path)
+    width, height = result_img.size
+  except Exception as e:
+    return JSONResponse(status_code=500, content={"error": f"Failed to read result: {str(e)}"})
+  
+  thumb_filename = f"{new_id}.webp"
+  thumb_path = THUMB_DIR / thumb_filename
+  try:
+    thumb_img = result_img.copy()
+    thumb_img.thumbnail((THUMB_MAX_SIZE, THUMB_MAX_SIZE), Image.Resampling.LANCZOS)
+    if thumb_img.mode == "RGBA":
+      bg = Image.new("RGB", thumb_img.size, (255, 255, 255))
+      bg.paste(thumb_img, mask=thumb_img.split()[-1])
+      thumb_img = bg
+    thumb_img.save(thumb_path, "WEBP", quality=THUMB_WEBP_QUALITY)
+  except Exception as e:
+    print(f"Thumbnail creation failed: {e}")
+  
+  src_original = src_row.get("originalName", "image")
+  src_base = Path(src_original).stem
+  new_original = f"{src_base}_nukki.png"
+  
+  src_tags = src_row.get("tags")
+  if hasattr(src_tags, "tolist"):
+    src_tags = src_tags.tolist()
+  if not isinstance(src_tags, list):
+    src_tags = []
+  
+  vector = ZERO_VECTOR
+  try:
+    vec = await encode_image_path(new_path)
+    if vec and len(vec) == VECTOR_DIM:
+      vector = vec
+  except Exception:
+    pass
+  
   import datetime
   new_row = {
     "id": new_id,

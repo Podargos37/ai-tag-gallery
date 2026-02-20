@@ -18,6 +18,7 @@ export default function ImageDetailsSidebar({
   onRemoveImageFromFolder,
   onDelete,
   onImageCreated,
+  onOpenNukki,
 }: {
   image: ImageItem;
   onClose: () => void;
@@ -26,6 +27,7 @@ export default function ImageDetailsSidebar({
   onRemoveImageFromFolder?: (folderId: string, imageId: string) => void;
   onDelete?: (image: ImageItem) => void | Promise<void>;
   onImageCreated?: (newImage: ImageItem) => void;
+  onOpenNukki?: () => void;
 }) {
   const [notes, setNotes] = useState(image?.notes || "");
   const [metadataTick, setMetadataTick] = useState(0);
@@ -409,7 +411,7 @@ export default function ImageDetailsSidebar({
               type="button"
               className="flex items-center gap-3 w-full p-4 rounded-lg border transition-colors hover:bg-white/5"
               style={{ borderColor: "var(--surface-border)" }}
-              onClick={() => alert("누끼 기능 준비 중")}
+              onClick={onOpenNukki}
             >
               <div className="p-2 rounded-lg bg-orange-500/20">
                 <Scissors className="w-5 h-5 text-orange-400" />

@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { X } from "lucide-react";
 import ImagePane from "./modal/ImagePane";
 import ImageDetailsSidebar from "./modal/ImageDetailsSidebar";
+import NukkiEditor from "./nukki/NukkiEditor";
 import { useImageModalEffects } from "@/hooks/useImageModalEffects";
 import type { Folder } from "@/types/folders";
 import type { ImageItem } from "@/types/gallery";
@@ -38,6 +40,8 @@ export default function ImageModal({
   onDelete,
   onImageCreated,
 }: ImageModalProps) {
+  const [isNukkiEditorOpen, setIsNukkiEditorOpen] = useState(false);
+
   const {
     isSlideshowPlaying,
     setIsSlideshowPlaying,
@@ -53,6 +57,14 @@ export default function ImageModal({
   const handleClose = () => {
     setIsSlideshowPlaying(false);
     onClose();
+  };
+
+  const handleNukkiComplete = (newImage: ImageItem) => {
+    setIsNukkiEditorOpen(false);
+    if (onImageCreated) {
+      onImageCreated(newImage);
+    }
+    alert("누끼 추출 완료! 새 이미지가 갤러리에 추가되었습니다.");
   };
 
   return (
@@ -104,10 +116,20 @@ export default function ImageModal({
               onRemoveImageFromFolder={onRemoveImageFromFolder}
               onDelete={onDelete}
               onImageCreated={onImageCreated}
+              onOpenNukki={() => setIsNukkiEditorOpen(true)}
             />
           </div>
         )}
       </div>
+
+      {/* 누끼 에디터 */}
+      {isNukkiEditorOpen && (
+        <NukkiEditor
+          image={image}
+          onClose={() => setIsNukkiEditorOpen(false)}
+          onComplete={handleNukkiComplete}
+        />
+      )}
     </div>
   );
 }

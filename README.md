@@ -137,69 +137,75 @@
 - **Python** 3.10 이상
 - **(선택)** NVIDIA GPU + CUDA — 태깅·임베딩 속도 향상용. CPU만으로도 동작합니다.
 
-### 설치
+### 설치 및 실행 (Windows)
 
-1. **저장소 클론**
+1. **저장소 클론** 또는 ZIP 다운로드
 
    ```bash
    git clone https://github.com/Podargos37/ai-tag-gallery.git
    cd ai-tag-gallery
    ```
 
-2. **Node 의존성 설치**
+2. **초기 설정** — `setup.bat` 더블 클릭 (또는 PowerShell에서 `.\setup.bat`)
+   - Node.js, Python 확인
+   - 가상환경(.venv) 생성
+   - Python/Node 의존성 설치
+   - Git 저장소인 경우 자동으로 `git pull` 실행
+
+3. **PyTorch 설치** (환경에 맞게 하나만)
 
    ```bash
-   npm install
+   # CPU
+   pip install torch torchvision
+
+   # GPU (CUDA 12.1)
+   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
    ```
+   다른 CUDA 버전: [PyTorch 설치 페이지](https://pytorch.org/get-started/locally/) 참고.
 
-3. **Python 가상환경 및 의존성**
+4. **실행** — `run.bat` 더블 클릭
+   - Next.js 빌드 및 실행 (포트 3000)
+   - Python AI 서버 실행 (포트 8000)
+   - 브라우저 자동 열림
 
-   ```bash
-   python -m venv .venv
-   # Windows
-   .venv\Scripts\activate
-   # macOS/Linux
-   source .venv/bin/activate
-
-   pip install -r requirements.txt
-   ```
-
-4. **PyTorch 설치 (환경에 맞게 하나만)**
-
-   - **CPU**:  
-     `pip install torch torchvision`
-   - **GPU (CUDA 12.1)**:  
-     `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121`  
-   - 다른 CUDA 버전: [PyTorch 설치 페이지](https://pytorch.org/get-started/locally/) 참고.
+> **업데이트**: `setup.bat`을 다시 실행하면 `git pull` + 의존성 동기화가 자동으로 됩니다.
 
 ---
 
 ## 실행 방법
 
-### 한 번에 실행 (Windows)
+### Windows (권장)
 
-- 루트의 **`run.bat`** 더블 클릭.  
-  - Next.js(3000), Python FastAPI(8000)를 띄우고, 필요 시 의존성 설치를 시도합니다.
+| 파일 | 용도 |
+|------|------|
+| `setup.bat` | 초기 설정 및 업데이트 (의존성 설치, git pull) |
+| `run.bat` | 앱 실행 (빌드 → 서버 시작 → 브라우저 열기) |
 
-### 수동 실행
+### 수동 실행 (macOS/Linux 또는 개발용)
 
-1. **Next.js** (터미널 1)
+1. **Python 가상환경 활성화**
+
+   ```bash
+   # Windows
+   .venv\Scripts\activate
+   # macOS/Linux
+   source .venv/bin/activate
+   ```
+
+2. **Next.js** (터미널 1)
 
    ```bash
    npm run dev
    ```
 
-2. **Python AI 서버** (터미널 2, `server` 디렉터리 또는 프로젝트 루트에서)
+3. **Python AI 서버** (터미널 2)
 
    ```bash
    cd server
    python main.py
    ```
 
-   - 기본: `http://0.0.0.0:8000`  
-   - Next는 `http://localhost:3000`에서 접속.
-
-3. 브라우저에서 **http://localhost:3000** 접속.
+4. 브라우저에서 **http://localhost:3000** 접속.
 
 ---
 

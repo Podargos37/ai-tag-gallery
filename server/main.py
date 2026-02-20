@@ -314,6 +314,9 @@ async def backfill_embeddings():
     if not path.exists():
       skipped += 1
       continue
+    if not _is_zero_vector(row.get("vector")):
+      skipped += 1
+      continue
     try:
       vec = await encode_image_path(path)
       if vec and len(vec) == VECTOR_DIM:

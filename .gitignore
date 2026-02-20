@@ -58,6 +58,7 @@ data/
 
 # AI model files
 *.onnx
+models/
 selected_tags.csv
 
 # bin: cloudflared, portable Node, realesrgan (auto-downloaded at runtime)

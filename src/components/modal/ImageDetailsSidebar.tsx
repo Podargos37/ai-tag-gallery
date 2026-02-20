@@ -32,6 +32,41 @@ export default function ImageDetailsSidebar({
   const [activeTab, setActiveTab] = useState<"info" | "tools">("info");
   const { saveNotes, isSaving } = useUpdateNotes();
 
+  // 업스케일 상태
+  const [upscaleExpanded, setUpscaleExpanded] = useState(false);
+  const [upscaleScale, setUpscaleScale] = useState(2.0);
+  const [isUpscaling, setIsUpscaling] = useState(false);
+
+  const handleUpscale = useCallback(async () => {
+    if (isUpscaling) return;
+    setIsUpscaling(true);
+    try {
+      const res = await fetch("/api/upscale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageId: image.id,
+          scale: upscaleScale,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`업스케일 실패: ${data.error || "알 수 없는 오류"}`);
+        return;
+      }
+      alert(`업스케일 완료! 새 이미지가 갤러리에 추가되었습니다.`);
+      if (onImageCreated && data.image) {
+        onImageCreated(data.image);
+      }
+      setUpscaleExpanded(false);
+    } catch (e) {
+      alert("업스케일 중 오류가 발생했습니다.");
+      console.error(e);
+    } finally {
+      setIsUpscaling(false);
+    }
+  }, [image.id, upscaleScale, isUpscaling, onImageCreated]);
+
   // 파일 변환 상태
   const [convertExpanded, setConvertExpanded] = useState(false);
   const [convertFormat, setConvertFormat] = useState<"png" | "jpg" | "webp">("png");
@@ -189,20 +224,91 @@ export default function ImageDetailsSidebar({
             <h4 className="text-sm font-semibold opacity-70 mb-4">이미지 도구</h4>
             
             {/* 업스케일 */}
-            <button
-              type="button"
-              className="flex items-center gap-3 w-full p-4 rounded-lg border transition-colors hover:bg-white/5"
+            <div
+              className="rounded-lg border overflow-hidden"
               style={{ borderColor: "var(--surface-border)" }}
-              onClick={() => alert("업스케일 기능 준비 중")}
             >
-              <div className="p-2 rounded-lg bg-green-500/20">
-                <ImageUp className="w-5 h-5 text-green-400" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">업스케일</p>
-                <p className="text-xs opacity-60">Real-ESRGAN으로 해상도 향상</p>
-              </div>
-            </button>
+              <button
+                type="button"
+                className="flex items-center gap-3 w-full p-4 transition-colors hover:bg-white/5"
+                onClick={() => setUpscaleExpanded(!upscaleExpanded)}
+              >
+                <div className="p-2 rounded-lg bg-green-500/20">
+                  <ImageUp className="w-5 h-5 text-green-400" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="font-medium">업스케일</p>
+                  <p className="text-xs opacity-60">Real-ESRGAN으로 해상도 향상</p>
+                </div>
+                <ChevronDown
+                  className={`w-5 h-5 opacity-50 transition-transform ${
+                    upscaleExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              
+              {upscaleExpanded && (
+                <div className="p-4 pt-0 space-y-4">
+                  {/* 배율 슬라이더 */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium opacity-70">
+                        배율
+                      </label>
+                      <span className="text-sm font-bold text-green-400">
+                        {upscaleScale.toFixed(1)}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1.5"
+                      max="4.0"
+                      step="0.1"
+                      value={upscaleScale}
+                      onChange={(e) => setUpscaleScale(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-green-500"
+                    />
+                    <div className="flex justify-between text-xs opacity-40 mt-1">
+                      <span>1.5x</span>
+                      <span>4.0x</span>
+                    </div>
+                  </div>
+
+                  {/* 예상 결과 크기 */}
+                  {image.width && image.height && (
+                    <div className="text-xs opacity-60 bg-white/5 rounded-lg p-3">
+                      <p>현재: {image.width} × {image.height}</p>
+                      <p>결과: {Math.round(image.width * upscaleScale)} × {Math.round(image.height * upscaleScale)}</p>
+                    </div>
+                  )}
+
+                  {/* 경고 */}
+                  <p className="text-xs text-yellow-400/80">
+                    ⚠️ GPU 없으면 수십 초~수 분 소요될 수 있습니다
+                  </p>
+
+                  {/* 업스케일 버튼 */}
+                  <button
+                    type="button"
+                    onClick={handleUpscale}
+                    disabled={isUpscaling}
+                    className="w-full py-2.5 rounded-lg text-sm font-medium bg-green-500/20 border border-green-500/40 hover:bg-green-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isUpscaling ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        업스케일 중...
+                      </>
+                    ) : (
+                      <>
+                        <ImageUp className="w-4 h-4" />
+                        {upscaleScale.toFixed(1)}x 업스케일
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* 파일 변환 */}
             <div

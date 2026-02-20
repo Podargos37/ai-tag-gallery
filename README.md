@@ -56,7 +56,23 @@
 
 - 이미지와 메타데이터는 사용자 환경에서만 처리됩니다. 외부 AI API나 클라우드 저장소를 사용하지 않습니다.
 
-### 7. 휴대폰에서 접속 (Cloudflare 터널 + QR 코드)
+### 7. 도구
+
+#### 파일 변환
+- 이미지를 **PNG, JPG, WebP** 형식으로 변환할 수 있습니다.
+- JPG, WebP는 품질(1~100)을 슬라이더로 조절 가능합니다.
+- 변환된 이미지는 새 이미지로 갤러리에 추가됩니다.
+
+#### 업스케일 (Real-ESRGAN)
+- **Real-ESRGAN** AI 모델로 이미지 해상도를 향상시킵니다.
+- 슬라이더로 **1.5x ~ 4.0x** 배율을 0.1 단위로 자유롭게 선택할 수 있습니다.
+- GPU가 있으면 빠르게 처리되며, CPU만으로도 동작합니다.
+- 업스케일된 이미지는 새 이미지로 갤러리에 추가됩니다.
+
+#### 누끼 (배경 제거)
+- *추가 예정*
+
+### 8. 휴대폰에서 접속 (Cloudflare 터널 + QR 코드)
 
 - **Cloudflare Quick Tunnel**을 이용해 로컬 갤러리를 인터넷에서 접근 가능한 임시 URL로 열어 둡니다.
 - Python 서버 실행 시 터널이 자동으로 뜨며, **cloudflared** 바이너리가 없으면 프로젝트 `bin/`에 자동 다운로드됩니다. (별도 Cloudflare 계정 불필요, Zero-Configuration)
@@ -91,6 +107,7 @@
 | 이미지 태깅 | WD-v3 ViT-Eva02-Large-Tagger (transformers, ONNX 등) |
 | 텍스트 임베딩 (시맨틱 검색) | sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2) |
 | 이미지 임베딩 (유사 이미지 검색) | sentence-transformers (CLIP ViT-B/32) |
+| 이미지 업스케일 | Real-ESRGAN (PyTorch) |
 | 벡터 검색 | LanceDB (로컬 디스크) |
 
 - PyTorch는 CPU/GPU 환경에 맞게 **별도 설치**합니다. (requirements.txt에는 포함되지 않음.)
@@ -114,6 +131,12 @@
    - 이미지를 512차원 벡터로 인코딩합니다.  
    - 유사 이미지 검색 시 L2 거리로 가장 가까운 이미지를 찾는 데 사용됩니다.  
    - 약 600MB 수준이며, 노트북 CPU에서도 동작합니다.
+
+4. **이미지 업스케일**  
+   [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) (RealESRGAN_x4plus_anime_6B)  
+   - AI 기반 이미지 초해상도(Super Resolution) 모델입니다.  
+   - 1.5x ~ 4.0x 배율로 이미지 해상도를 향상시킵니다.  
+   - 첫 사용 시 모델이 자동 다운로드됩니다 (~17MB).
 
 ---
 

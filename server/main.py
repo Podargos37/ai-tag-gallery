@@ -1,4 +1,27 @@
 # server/main.py — FastAPI 백엔드 (태깅, 시맨틱 검색, LanceDB 이미지 API, 터널 URL)
+
+# basicsr + 최신 torchvision 호환성 패치 (import 전에 실행 필수)
+import sys
+import importlib
+
+def _patch_basicsr_torchvision():
+  """basicsr이 사용하는 제거된 torchvision API를 패치."""
+  try:
+    from torchvision.transforms import functional as F
+    if not hasattr(F, 'rgb_to_grayscale'):
+      from torchvision.transforms.functional import rgb_to_grayscale
+      F.rgb_to_grayscale = rgb_to_grayscale
+    
+    # functional_tensor 모듈 가짜로 생성
+    import types
+    fake_module = types.ModuleType('torchvision.transforms.functional_tensor')
+    fake_module.rgb_to_grayscale = F.rgb_to_grayscale
+    sys.modules['torchvision.transforms.functional_tensor'] = fake_module
+  except Exception:
+    pass
+
+_patch_basicsr_torchvision()
+
 import asyncio
 import gc
 import threading
@@ -124,6 +147,87 @@ class ConvertRequest(BaseModel):
   imageId: str
   format: Literal["png", "jpg", "webp"]
   quality: int = 85  # 1-100, used for jpg/webp
+
+
+class UpscaleRequest(BaseModel):
+  imageId: str
+  scale: float = 2.0  # 1.5 ~ 4.0
+
+
+# Real-ESRGAN PyTorch 업스케일러 (지연 로딩)
+import cv2
+import numpy as np
+
+_upscaler_cache: dict = {}
+_upscaler_lock: Optional[asyncio.Lock] = None
+
+def _get_upscaler_lock() -> asyncio.Lock:
+  global _upscaler_lock
+  if _upscaler_lock is None:
+    _upscaler_lock = asyncio.Lock()
+  return _upscaler_lock
+
+
+def get_realesrgan_upscaler():
+  """RealESRGANer 인스턴스를 캐시에서 가져오거나 새로 생성. (anime 4x 모델 단일 사용)"""
+  from realesrgan import RealESRGANer
+  from basicsr.archs.rrdbnet_arch import RRDBNet
+  
+  cache_key = "anime_x4"
+  if cache_key in _upscaler_cache:
+    return _upscaler_cache[cache_key]
+  
+  device = "cuda" if torch.cuda.is_available() else "cpu"
+  
+  # anime 4x 모델 (outscale로 1.5x~4.0x 자유롭게 조절)
+  model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=6, num_grow_ch=32, scale=4)
+  model_path = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"
+  
+  upsampler = RealESRGANer(
+    scale=4,
+    model_path=model_path,
+    model=model,
+    tile=512,
+    tile_pad=32,
+    pre_pad=10,
+    half=False,
+    device=device,
+  )
+  
+  _upscaler_cache[cache_key] = upsampler
+  print(f"Loaded RealESRGAN model: anime x4 on {device}")
+  return upsampler
+
+
+def run_realesrgan_pytorch(input_path: Path, output_path: Path, scale: float) -> bool:
+  """PyTorch 기반 Real-ESRGAN으로 업스케일. scale: 1.5 ~ 4.0"""
+  try:
+    img = cv2.imread(str(input_path), cv2.IMREAD_UNCHANGED)
+    if img is None:
+      print(f"Failed to read image: {input_path}")
+      return False
+    
+    # RGBA -> BGR 변환 (알파 채널이 있으면 제거)
+    if img.ndim == 3 and img.shape[2] == 4:
+      img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+    
+    upsampler = get_realesrgan_upscaler()
+    output, _ = upsampler.enhance(img, outscale=scale)
+    
+    output_ext = output_path.suffix.lower()
+    if output_ext == ".webp":
+      cv2.imwrite(str(output_path), output, [cv2.IMWRITE_WEBP_QUALITY, 95])
+    elif output_ext == ".jpg" or output_ext == ".jpeg":
+      cv2.imwrite(str(output_path), output, [cv2.IMWRITE_JPEG_QUALITY, 95])
+    else:
+      cv2.imwrite(str(output_path), output)
+    
+    return output_path.exists()
+  except Exception as e:
+    print(f"RealESRGAN error: {e}")
+    import traceback
+    traceback.print_exc()
+    return False
 
 
 @app.post("/bulk-remove-tags")
@@ -555,6 +659,111 @@ async def convert_image(body: ConvertRequest):
   table.add([new_row])
   
   # 응답 (vector 제외)
+  response_row = {k: v for k, v in new_row.items() if k != "vector"}
+  return {"success": True, "image": response_row}
+
+
+@app.post("/upscale")
+async def upscale_image(body: UpscaleRequest):
+  """Real-ESRGAN (PyTorch)으로 이미지 업스케일 후 새 이미지로 갤러리에 추가."""
+  import time
+  
+  table = get_table()
+  df = table.to_pandas()
+  
+  # 원본 이미지 찾기
+  row = df[df["id"].astype(str) == str(body.imageId).strip()]
+  if row.empty:
+    return JSONResponse(status_code=404, content={"error": "Image not found"})
+  
+  src_row = row.iloc[0]
+  src_filename = src_row.get("filename")
+  src_path = UPLOAD_DIR / str(src_filename)
+  
+  if not src_path.exists():
+    return JSONResponse(status_code=404, content={"error": "Image file not found"})
+  
+  # 새 파일 경로 (WebP로 저장하여 용량 절약)
+  new_id = str(int(time.time() * 1000))
+  new_filename = f"{new_id}.webp"
+  new_path = UPLOAD_DIR / new_filename
+  
+  # scale 범위 제한 (1.5 ~ 4.0)
+  scale = max(1.5, min(4.0, body.scale))
+  
+  # PyTorch Real-ESRGAN으로 업스케일 실행
+  try:
+    success = await asyncio.to_thread(
+      run_realesrgan_pytorch,
+      src_path,
+      new_path,
+      scale
+    )
+    if not success:
+      return JSONResponse(status_code=500, content={"error": "Upscale failed"})
+  except Exception as e:
+    return JSONResponse(status_code=500, content={"error": f"Upscale failed: {str(e)}"})
+  
+  # 결과 이미지 크기 확인
+  try:
+    result_img = Image.open(new_path)
+    width, height = result_img.size
+  except Exception as e:
+    return JSONResponse(status_code=500, content={"error": f"Failed to read result: {str(e)}"})
+  
+  # 썸네일 생성
+  thumb_filename = f"{new_id}.webp"
+  thumb_path = THUMB_DIR / thumb_filename
+  try:
+    thumb_img = result_img.copy()
+    thumb_img.thumbnail((THUMB_MAX_SIZE, THUMB_MAX_SIZE), Image.Resampling.LANCZOS)
+    if thumb_img.mode == "RGBA":
+      bg = Image.new("RGB", thumb_img.size, (255, 255, 255))
+      bg.paste(thumb_img, mask=thumb_img.split()[-1])
+      thumb_img = bg
+    elif thumb_img.mode != "RGB":
+      thumb_img = thumb_img.convert("RGB")
+    thumb_img.save(thumb_path, "WEBP", quality=THUMB_WEBP_QUALITY)
+  except Exception as e:
+    print(f"Thumbnail creation failed: {e}")
+  
+  # 원본 정보
+  src_original = src_row.get("originalName", "image")
+  src_base = Path(src_original).stem
+  scale_str = f"{scale:.1f}".rstrip('0').rstrip('.')  # 2.0 -> "2", 2.5 -> "2.5"
+  new_original = f"{src_base}_x{scale_str}.webp"
+  
+  src_tags = src_row.get("tags")
+  if hasattr(src_tags, "tolist"):
+    src_tags = src_tags.tolist()
+  if not isinstance(src_tags, list):
+    src_tags = []
+  
+  # CLIP 벡터 계산
+  vector = ZERO_VECTOR
+  try:
+    vec = await encode_image_path(new_path)
+    if vec and len(vec) == VECTOR_DIM:
+      vector = vec
+  except Exception:
+    pass
+  
+  # LanceDB에 등록
+  import datetime
+  new_row = {
+    "id": new_id,
+    "filename": new_filename,
+    "thumbnail": thumb_filename,
+    "originalName": new_original,
+    "tags": src_tags,
+    "width": width,
+    "height": height,
+    "notes": "",
+    "createdAt": datetime.datetime.now().isoformat(),
+    "vector": vector,
+  }
+  table.add([new_row])
+  
   response_row = {k: v for k, v in new_row.items() if k != "vector"}
   return {"success": True, "image": response_row}
 

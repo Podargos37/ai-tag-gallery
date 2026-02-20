@@ -258,17 +258,6 @@
 - 완료 후 "벡터 갱신 N건 / 건너뜀 M건 / 실패 K건"으로 결과가 표시됩니다.
 - 이미지 수가 많으면 수 분 이상 걸릴 수 있습니다.
 
-### 이미지 비율 백필 (선택)
-
-- 예전에 업로드한 이미지는 메타데이터에 width/height가 없어 갤러리에서 3:4로 보일 수 있습니다.
-- 다음을 **한 번** 실행하면 `public/metadata`에 원본 비율이 채워집니다. (클론 후 각자 한 번씩 실행하면 됩니다.)
-
-  ```bash
-  npm run backfill-dimensions
-  ```
-
----
-
 ## 스크립트
 
 | 명령 | 설명 |
@@ -276,7 +265,6 @@
 | `npm run dev` | Next.js 개발 서버 (3000) |
 | `npm run build` | Next.js 프로덕션 빌드 |
 | `npm run start` | Next.js 프로덕션 서버 실행 |
-| `npm run backfill-dimensions` | 기존 이미지 width/height 메타데이터 보정 |
 | `python server/main.py` | Python AI 서버 (8000) |
 
 ---

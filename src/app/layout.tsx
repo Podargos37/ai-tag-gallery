@@ -3,6 +3,8 @@ import "./globals.css";
 import UploadButton from "@/components/UploadButton";
 import MobileLinkButton from "@/components/MobileLinkButton";
 import SettingsButton from "@/components/SettingsButton";
+import ThemeInit from "@/components/ThemeInit";
+import { DEFAULT_THEME } from "@/constants/themes";
 
 export const metadata: Metadata = {
   title: "AI-Tag-Gallery",
@@ -14,12 +16,23 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const themeScript = `(function(){document.documentElement.setAttribute('data-theme',${JSON.stringify(DEFAULT_THEME)});})();`;
+
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
-        <header className="border-b border-white/10 p-4 sticky top-0 bg-indigo-900 backdrop-blur-md z-50">
+        <ThemeInit />
+        <header
+          className="border-b p-4 sticky top-0 backdrop-blur-md z-50"
+          style={{ backgroundColor: "var(--header-bg)", borderColor: "var(--header-border)" }}
+        >
           <div className="mx-auto flex justify-between items-center max-w-7xl">
-            <h1 className="text-xl font-bold tracking-tighter text-white italic">GALLERY.AI</h1>
+            <h1 className="text-xl font-bold tracking-tighter italic" style={{ color: "var(--foreground)" }}>
+              GALLERY.AI
+            </h1>
             <div className="flex gap-4">
               <UploadButton />
             </div>

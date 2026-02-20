@@ -1,22 +1,28 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Menu } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useDelete } from "@/hooks/useDelete";
 import { useGallerySelection } from "@/hooks/useGallerySelection";
 import { useBulkTag } from "@/hooks/useBulkTag";
 import { useFolders } from "@/hooks/useFolders";
+import { useGalleryImages } from "@/hooks/useGalleryImages";
+import { searchSimilar } from "@/lib/api/search-similar";
 import ImageModal from "./ImageModal";
+import SimilarImagesDrawer from "./similar/SimilarImagesDrawer";
 import { BulkTagBar, GalleryGrid, SearchBar } from "./gallery";
 import FolderSidebarLayout from "./sidebar/FolderSidebarLayout";
 import type { ImageItem } from "@/types/gallery";
-import { UNFOLDERED_ID } from "@/types/folders";
 
 export default function GalleryClient({ initialImages }: { initialImages: ImageItem[] }) {
   const [images, setImages] = useState<ImageItem[]>(initialImages);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [similarDrawerOpen, setSimilarDrawerOpen] = useState(false);
+  const [similarQueryImage, setSimilarQueryImage] = useState<ImageItem | null>(null);
+  const [similarResults, setSimilarResults] = useState<ImageItem[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
   const {
     folders,
     selectedFolderId,
@@ -29,26 +35,10 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     removeImageFromFolder,
   } = useFolders();
 
-  const idsInAnyFolder = useMemo(() => {
-    const set = new Set<string>();
-    for (const f of folders) for (const id of f.imageIds) set.add(id);
-    return set;
-  }, [folders]);
-
-  const baseImages = useMemo(() => {
-    if (selectedFolderId === UNFOLDERED_ID) {
-      return images.filter((img) => !idsInAnyFolder.has(img.id));
-    }
-    if (!selectedFolderId) return images;
-    const folder = folders.find((f) => f.id === selectedFolderId);
-    if (!folder) return images;
-    const idSet = new Set(folder.imageIds);
-    return images.filter((img) => idSet.has(img.id));
-  }, [images, folders, selectedFolderId, idsInAnyFolder]);
-
-  const unfolderedCount = useMemo(
-    () => images.filter((img) => !idsInAnyFolder.has(img.id)).length,
-    [images, idsInAnyFolder]
+  const { baseImages, unfolderedCount } = useGalleryImages(
+    images,
+    folders,
+    selectedFolderId
   );
 
   const { search, setSearch, filteredImages, setFilteredImages, isSearching, runSearch } = useSearch(baseImages);
@@ -83,6 +73,21 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     const success = await deleteImage(id, filename);
     if (!success) alert("삭제 중 오류가 발생했습니다.");
   };
+
+  const handleSearchSimilar = useCallback(async (image: ImageItem) => {
+    setSimilarQueryImage(image);
+    setSimilarResults([]);
+    setSimilarLoading(true);
+    setSimilarDrawerOpen(true);
+    try {
+      const results = await searchSimilar(image.id, 20);
+      setSimilarResults(results);
+    } catch {
+      setSimilarResults([]);
+    } finally {
+      setSimilarLoading(false);
+    }
+  }, []);
 
   const handleBulkDelete = async () => {
     const count = selectedIds.size;
@@ -169,10 +174,24 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
               onCardSelectionClick={handleCardSelectionClick}
               onCardToggleOne={handleCardToggleOne}
               onDeleteImage={handleDeleteClick}
+              onSearchSimilar={handleSearchSimilar}
             />
           </div>
         </div>
       </div>
+
+      {similarDrawerOpen && (
+        <SimilarImagesDrawer
+          open={similarDrawerOpen}
+          onClose={() => setSimilarDrawerOpen(false)}
+          queryImage={similarQueryImage}
+          results={similarResults}
+          loading={similarLoading}
+          onSelectImage={(img) => {
+            setSelectedImage(img);
+          }}
+        />
+      )}
 
       {selectedImage && (
         <ImageModal

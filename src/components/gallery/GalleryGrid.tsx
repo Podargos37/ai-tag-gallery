@@ -13,6 +13,7 @@ interface GalleryGridProps {
   onCardSelectionClick?: (image: ImageItem, index: number) => void;
   onCardToggleOne?: (image: ImageItem, index: number) => void;
   onDeleteImage: (e: React.MouseEvent, id: string, filename: string) => void;
+  onSearchSimilar?: (image: ImageItem) => void;
 }
 
 export default function GalleryGrid({
@@ -23,6 +24,7 @@ export default function GalleryGrid({
   onCardSelectionClick,
   onCardToggleOne,
   onDeleteImage,
+  onSearchSimilar,
 }: GalleryGridProps) {
   const { containerRef, totalHeight, visibleCells } = useVirtualMasonry({
     images,
@@ -74,6 +76,7 @@ export default function GalleryGrid({
             onDelete={(e) =>
               onDeleteImage(e, cell.image.id, cell.image.filename)
             }
+            onSearchSimilar={onSearchSimilar}
           />
         )}
       />

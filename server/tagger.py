@@ -36,7 +36,7 @@ class WD14Eva02Tagger:
         tags_path = hf_hub_download(repo_id=self.model_id, filename="selected_tags.csv")
         self.labels = pd.read_csv(tags_path)['name'].tolist()
 
-    def predict(self, image_bytes):
+    def predict(self, image_bytes, threshold=0.35):
         try:
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
             inputs = self.processor(images=image, return_tensors="pt").to(self.device)
@@ -45,7 +45,6 @@ class WD14Eva02Tagger:
                 outputs = self.model(inputs['pixel_values'])
                 probs = torch.sigmoid(outputs)[0]
 
-                threshold = 0.35
                 indices = torch.where(probs > threshold)[0]
                 found_tags = [self.labels[i.item()].replace('_', ' ') for i in indices]
 

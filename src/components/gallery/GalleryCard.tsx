@@ -8,6 +8,7 @@ import { DEFAULT_ASPECT_RATIO } from "@/constants/gallery";
 interface GalleryCardProps {
   image: ImageItem;
   isSelected?: boolean;
+  selectedIds?: Set<string>;
   onSelect: () => void;
   onSelectionClick?: (e: React.MouseEvent) => void;
   onToggleOneClick?: () => void;
@@ -18,6 +19,7 @@ interface GalleryCardProps {
 export default function GalleryCard({
   image,
   isSelected = false,
+  selectedIds,
   onSelect,
   onSelectionClick,
   onToggleOneClick,
@@ -30,6 +32,32 @@ export default function GalleryCard({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const hasTags = (image.tags?.length ?? 0) > 0;
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      const draggedIds =
+        isSelected && selectedIds && selectedIds.size > 0
+          ? Array.from(selectedIds)
+          : [image.id];
+
+      e.dataTransfer.setData(
+        "application/x-gallery-images",
+        JSON.stringify(draggedIds)
+      );
+      e.dataTransfer.effectAllowed = "copy";
+
+      const count = draggedIds.length;
+      const label = count > 1 ? `${count}개 이미지` : image.originalName;
+      const dragImage = document.createElement("div");
+      dragImage.textContent = label;
+      dragImage.style.cssText =
+        "position:absolute;top:-1000px;padding:8px 12px;background:#6366f1;color:white;border-radius:8px;font-size:14px;white-space:nowrap;";
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, 0, 0);
+      setTimeout(() => document.body.removeChild(dragImage), 0);
+    },
+    [image.id, image.originalName, isSelected, selectedIds]
+  );
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -79,6 +107,8 @@ export default function GalleryCard({
 
   return (
     <div
+      draggable
+      onDragStart={handleDragStart}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       style={{ aspectRatio }}

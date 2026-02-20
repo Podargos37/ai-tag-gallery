@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { getUploadProgress, uploadFiles } from "@/lib/api";
+import type { ImageItem } from "@/types/gallery";
 
 type UploadPhase = "idle" | "uploading" | "processing";
+
+export type UploadResult = {
+  success: boolean;
+  images: ImageItem[];
+};
 
 export function useUpload() {
   const [isUploading, setIsUploading] = useState(false);
@@ -9,9 +15,12 @@ export function useUpload() {
   const [progress, setProgress] = useState<number | null>(null);
   const [totalFiles, setTotalFiles] = useState(0);
 
-  const uploadImages = async (files: File[] | FileList) => {
+  const uploadImages = async (
+    files: File[] | FileList,
+    options?: { skipReload?: boolean }
+  ): Promise<UploadResult> => {
     const fileArray = Array.from(files);
-    if (fileArray.length === 0) return false;
+    if (fileArray.length === 0) return { success: false, images: [] };
 
     setIsUploading(true);
     setTotalFiles(fileArray.length);
@@ -50,15 +59,21 @@ export function useUpload() {
       setPhase("processing");
       setProgress(100);
 
-      const count = Array.isArray(data?.metadata) ? data.metadata.length : 1;
+      const uploadedImages = Array.isArray(data?.metadata)
+        ? (data.metadata as ImageItem[])
+        : [];
+      const count = uploadedImages.length;
       console.log(`업로드 성공! ${count}개`);
 
-      window.location.reload();
-      return true;
+      if (!options?.skipReload) {
+        window.location.reload();
+      }
+
+      return { success: true, images: uploadedImages };
     } catch (error) {
       console.error("업로드 에러:", error);
       alert("업로드 중 에러가 발생했습니다.");
-      return false;
+      return { success: false, images: [] };
     } finally {
       polling = false;
       setPhase("idle");

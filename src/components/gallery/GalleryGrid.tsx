@@ -62,6 +62,7 @@ export default function GalleryGrid({
           <GalleryCard
             image={cell.image}
             isSelected={selectedIds.has(cell.image.id)}
+            selectedIds={selectedIds}
             onSelect={() => onSelectImage(cell.image)}
             onSelectionClick={
               onCardSelectionClick

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Menu } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Menu, ImagePlus } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useDelete } from "@/hooks/useDelete";
 import { useGallerySelection } from "@/hooks/useGallerySelection";
 import { useBulkTag } from "@/hooks/useBulkTag";
 import { useFolders } from "@/hooks/useFolders";
 import { useGalleryImages } from "@/hooks/useGalleryImages";
+import { useUpload } from "@/hooks/useUpload";
 import { searchSimilar } from "@/lib/api/search-similar";
 import ImageModal from "./ImageModal";
 import SimilarImagesDrawer from "./similar/SimilarImagesDrawer";
@@ -23,6 +24,9 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
   const [similarQueryImage, setSimilarQueryImage] = useState<ImageItem | null>(null);
   const [similarResults, setSimilarResults] = useState<ImageItem[]>([]);
   const [similarLoading, setSimilarLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
+  const { uploadImages, isUploading, phase, progress, totalFiles } = useUpload();
   const {
     folders,
     selectedFolderId,
@@ -118,6 +122,74 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     setImages((prev) => [newImage, ...prev]);
   }, []);
 
+  const currentFolderName = folders.find((f) => f.id === selectedFolderId)?.name;
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    if (
+      e.dataTransfer.types.includes("Files") &&
+      !e.dataTransfer.types.includes("application/x-gallery-images")
+    ) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      dragCounterRef.current = 0;
+
+      if (e.dataTransfer.types.includes("application/x-gallery-images")) {
+        return;
+      }
+
+      const files = e.dataTransfer.files;
+      if (files.length === 0) return;
+
+      const imageFiles = Array.from(files).filter((f) =>
+        f.type.startsWith("image/")
+      );
+      if (imageFiles.length === 0) {
+        alert("이미지 파일만 업로드할 수 있습니다.");
+        return;
+      }
+
+      const result = await uploadImages(imageFiles, { skipReload: true });
+
+      if (result.success && result.images.length > 0) {
+        setImages((prev) => [...result.images, ...prev]);
+
+        if (
+          selectedFolderId &&
+          selectedFolderId !== "__all__" &&
+          selectedFolderId !== "__unfoldered__"
+        ) {
+          const newImageIds = result.images.map((img) => img.id);
+          await addImagesToFolder(selectedFolderId, newImageIds);
+        }
+      }
+    },
+    [uploadImages, selectedFolderId, addImagesToFolder]
+  );
+
   const handleBulkDelete = async () => {
     const count = selectedIds.size;
     if (count === 0) return;
@@ -145,13 +217,62 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
   };
 
   return (
-    <div className="flex gap-6 w-full h-[calc(100vh-7.5rem)] min-h-0">
+    <div
+      className="flex gap-6 w-full h-[calc(100vh-7.5rem)] min-h-0 relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {(isDragging || isUploading) && (
+        <div className="absolute inset-0 z-50 pointer-events-none">
+          <div
+            className={`absolute inset-0 rounded-2xl border-4 border-dashed flex flex-col items-center justify-center transition-all duration-200 ${
+              isDragging
+                ? "bg-indigo-500/20 border-indigo-400"
+                : "bg-black/60 border-transparent"
+            }`}
+          >
+            {isDragging ? (
+              <>
+                <ImagePlus className="w-16 h-16 text-indigo-300 mb-4" />
+                <span className="text-white text-xl font-semibold">
+                  여기에 이미지를 놓으세요
+                </span>
+                {currentFolderName && (
+                  <span className="text-indigo-200 text-sm mt-2">
+                    &quot;{currentFolderName}&quot; 폴더에 추가됩니다
+                  </span>
+                )}
+                {!currentFolderName &&
+                  selectedFolderId !== "__unfoldered__" && (
+                    <span className="text-white/60 text-sm mt-2">
+                      전체 갤러리에 추가됩니다
+                    </span>
+                  )}
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4" />
+                <span className="text-white text-lg font-medium">
+                  {phase === "uploading" ? "업로드 중..." : "처리 중..."}
+                </span>
+                <span className="text-white/60 text-sm mt-1">
+                  {totalFiles}개 파일 {progress !== null && `· ${progress}%`}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <FolderSidebarLayout
         folders={folders}
         selectedFolderId={selectedFolderId}
         onSelectFolder={setSelectedFolderId}
         onAddFolder={addFolder}
         onDeleteFolder={deleteFolder}
+        onAddImagesToFolder={addImagesToFolder}
         loading={foldersLoading}
         unfolderedCount={unfolderedCount}
         mobileOpen={mobileSidebarOpen}

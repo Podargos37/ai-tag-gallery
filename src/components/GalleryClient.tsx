@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Menu } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useDelete } from "@/hooks/useDelete";
@@ -15,10 +15,29 @@ import { BulkTagBar, GalleryGrid, SearchBar } from "./gallery";
 import FolderSidebarLayout from "./sidebar/FolderSidebarLayout";
 import type { ImageItem } from "@/types/gallery";
 
+type SortOption = "oldest" | "latest" | "random";
+
+function getCreatedAtMs(image: ImageItem): number | null {
+  if (!image.createdAt) return null;
+  const ms = Date.parse(image.createdAt);
+  return Number.isNaN(ms) ? null : ms;
+}
+
+function shuffleIds(ids: string[]): string[] {
+  const next = [...ids];
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+}
+
 export default function GalleryClient({ initialImages }: { initialImages: ImageItem[] }) {
   const [images, setImages] = useState<ImageItem[]>(initialImages);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>("latest");
+  const [randomOrderIds, setRandomOrderIds] = useState<string[] | null>(null);
   const [similarDrawerOpen, setSimilarDrawerOpen] = useState(false);
   const [similarQueryImage, setSimilarQueryImage] = useState<ImageItem | null>(null);
   const [similarResults, setSimilarResults] = useState<ImageItem[]>([]);
@@ -44,6 +63,27 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
 
   const { search, setSearch, filteredImages, setFilteredImages, isSearching, runSearch } = useSearch(baseImages);
   const { deleteImage } = useDelete(setFilteredImages);
+
+  const sortedImages = useMemo(() => {
+    if (sortOption === "oldest" || sortOption === "latest") {
+      return [...filteredImages].sort((a, b) => {
+        const aMs = getCreatedAtMs(a);
+        const bMs = getCreatedAtMs(b);
+        if (aMs === null && bMs === null) return 0;
+        if (aMs === null) return 1;
+        if (bMs === null) return -1;
+        return sortOption === "oldest" ? aMs - bMs : bMs - aMs;
+      });
+    }
+
+    if (!randomOrderIds) return filteredImages;
+    const rank = new Map(randomOrderIds.map((id, idx) => [id, idx]));
+    return [...filteredImages].sort((a, b) => {
+      const aRank = rank.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+      const bRank = rank.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+      return aRank - bRank;
+    });
+  }, [filteredImages, sortOption, randomOrderIds]);
 
   const {
     selectedImage,
@@ -144,6 +184,20 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     }
   };
 
+  const handleSortOptionChange = useCallback(
+    (next: SortOption) => {
+      setSortOption((prev) => {
+        if (next === "random" && prev !== "random") {
+          setRandomOrderIds(shuffleIds(filteredImages.map((img) => img.id)));
+        } else if (next !== "random") {
+          setRandomOrderIds(null);
+        }
+        return next;
+      });
+    },
+    [filteredImages]
+  );
+
   return (
     <div className="flex gap-6 w-full h-[calc(100vh-7.5rem)] min-h-0">
       <FolderSidebarLayout
@@ -172,6 +226,19 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
             <div className="flex-1 min-w-0">
               <SearchBar value={search} onChange={setSearch} isSearching={isSearching} onSubmit={runSearch} />
             </div>
+            <label className="shrink-0">
+              <span className="sr-only">정렬</span>
+              <select
+                value={sortOption}
+                onChange={(e) => handleSortOptionChange(e.target.value as SortOption)}
+                className="h-12 rounded-xl border border-white/15 bg-slate-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                aria-label="이미지 정렬"
+              >
+                <option value="latest">최근순</option>
+                <option value="oldest">오래된순</option>
+                <option value="random">랜덤</option>
+              </select>
+            </label>
           </div>
 
           {selectedIds.size > 0 && (
@@ -199,7 +266,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
         <div className="flex-1 min-h-0 overflow-y-auto flex justify-center">
           <div className="w-full">
             <GalleryGrid
-              images={filteredImages}
+              images={sortedImages}
               isSearching={isSearching}
               selectedIds={selectedIds}
               onSelectImage={setSelectedImage}

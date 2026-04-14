@@ -99,7 +99,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     isRandomSlideshow,
     startRandomSlideshow,
     clearRandomSlideshow,
-  } = useGallerySelection(filteredImages);
+  } = useGallerySelection(sortedImages);
 
   const bulkTag = useBulkTag(
     selectedIds,
@@ -162,7 +162,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     const count = selectedIds.size;
     if (count === 0) return;
     if (!confirm(`선택한 ${count}개의 이미지를 삭제할까요?`)) return;
-    const toDelete = filteredImages.filter((img) => selectedIds.has(img.id));
+    const toDelete = sortedImages.filter((img) => selectedIds.has(img.id));
     setIsBulkDeleting(true);
     const deletedIds = new Set<string>();
     try {

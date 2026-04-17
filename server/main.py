@@ -26,7 +26,7 @@ import asyncio
 import gc
 import threading
 from pathlib import Path
-from typing import Optional, Literal
+from typing import Iterator, Optional, Literal
 from io import BytesIO
 
 import torch
@@ -248,6 +248,16 @@ def run_realesrgan_pytorch(input_path: Path, output_path: Path, scale: float) ->
     return False
 
 
+def _iter_table_id_tags(table, batch_size: int = 4096) -> Iterator[tuple[object, object]]:
+  """images 테이블에서 id·tags만 배치 스캔. vector 등 대용량 컬럼은 읽지 않음."""
+  q = table.search().select(["id", "tags"])
+  for batch in q.to_batches(batch_size=batch_size):
+    col_id = batch.column("id")
+    col_tags = batch.column("tags")
+    for i in range(batch.num_rows):
+      yield col_id[i].as_py(), col_tags[i].as_py()
+
+
 @app.post("/bulk-remove-tags")
 def bulk_remove_tags(body: BulkRemoveTagsBody):
   """제외 목록 태그를 모든 이미지에서 완전 일치로 제거."""
@@ -257,19 +267,10 @@ def bulk_remove_tags(body: BulkRemoveTagsBody):
   if not exclude_set:
     return {"success": True, "updated": 0}
   table = get_table()
-  df = table.to_pandas()
-  if df.empty:
-    return {"success": True, "updated": 0}
-  if "tags" not in df.columns:
-    return {"success": True, "updated": 0}
   updated = 0
-  for _, row in df.iterrows():
-    row_id = row.get("id")
+  for row_id, tags in _iter_table_id_tags(table):
     if row_id is None:
       continue
-    tags = row.get("tags")
-    if hasattr(tags, "tolist"):
-      tags = tags.tolist()
     if not isinstance(tags, list):
       continue
     new_tags = [t for t in tags if str(t).strip().lower() not in exclude_set]

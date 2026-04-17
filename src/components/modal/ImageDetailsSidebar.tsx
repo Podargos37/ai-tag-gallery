@@ -1,6 +1,18 @@
 "use client";
 
-import { X, Calendar, Trash2, Info, Wrench, ImageUp, FileOutput, Scissors, ChevronDown, Loader2 } from "lucide-react";
+import {
+  X,
+  Calendar,
+  Trash2,
+  Info,
+  Wrench,
+  ImageUp,
+  FileOutput,
+  Scissors,
+  ChevronDown,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useUpdateNotes } from "@/hooks/useUpdateNotes";
 import { MetadataSection } from "./sections/MetadataSection";
@@ -105,6 +117,41 @@ export default function ImageDetailsSidebar({
       setIsConverting(false);
     }
   }, [image.id, convertFormat, convertQuality, isConverting, onImageCreated]);
+
+  const [isRetagging, setIsRetagging] = useState(false);
+
+  const handleRetag = useCallback(async () => {
+    if (isRetagging) return;
+    if (
+      !confirm(
+        "WD14로 태그를 다시 추출합니다.\n기존 태그는 모두 삭제되고 AI 결과로 덮어씁니다. 계속할까요?"
+      )
+    ) {
+      return;
+    }
+    setIsRetagging(true);
+    try {
+      const res = await fetch("/api/retag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: image.id, filename: image.filename }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`다시 태깅 실패: ${data.error || "알 수 없는 오류"}`);
+        return;
+      }
+      const nextTags = Array.isArray(data.tags) ? data.tags.map((t: string) => String(t)) : [];
+      image.tags = nextTags;
+      setMetadataTick((prev) => prev + 1);
+      alert("태그를 다시 적용했습니다.");
+    } catch (e) {
+      alert("다시 태깅 중 오류가 발생했습니다.");
+      console.error(e);
+    } finally {
+      setIsRetagging(false);
+    }
+  }, [image.id, image.filename, isRetagging]);
 
   useEffect(() => {
     if (image) {
@@ -421,6 +468,47 @@ export default function ImageDetailsSidebar({
                 <p className="text-xs opacity-60">MobileSAM으로 객체 추출</p>
               </div>
             </button>
+
+            {/* AI 다시 태깅 (덮어쓰기) */}
+            <div
+              className="rounded-lg border overflow-hidden"
+              style={{ borderColor: "var(--surface-border)" }}
+            >
+              <div className="flex items-start gap-3 p-4">
+                <div className="p-2 rounded-lg bg-cyan-500/20 shrink-0">
+                  <RefreshCw className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div className="text-left flex-1 min-w-0 space-y-3">
+                  <div>
+                    <p className="font-medium">다시 태깅</p>
+                    <p className="text-xs opacity-60 mt-0.5">
+                      WD14로 저장된 이미지에서 태그를 다시 추출합니다. 설정의 임계값·제외 태그가 적용됩니다.
+                    </p>
+                  </div>
+                  <p className="text-xs text-amber-400/90">
+                    기존 태그는 모두 덮어씌워집니다.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRetag}
+                    disabled={isRetagging}
+                    className="w-full py-2.5 rounded-lg text-sm font-medium bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isRetagging ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        태깅 중...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        AI로 다시 태깅
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

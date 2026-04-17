@@ -40,9 +40,12 @@ class WD14Eva02Tagger:
         try:
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
             inputs = self.processor(images=image, return_tensors="pt").to(self.device)
+            # timm WD v3 계열은 입력을 BGR 순서로 기대함 (neggles/wdv3-timm 참고).
+            # PIL·processor는 RGB이므로 추론 직전에 채널만 맞춘다.
+            pixel_values = inputs["pixel_values"][:, [2, 1, 0]]
 
             with torch.no_grad():
-                outputs = self.model(inputs['pixel_values'])
+                outputs = self.model(pixel_values)
                 probs = torch.sigmoid(outputs)[0]
 
                 indices = torch.where(probs > threshold)[0]

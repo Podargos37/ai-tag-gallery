@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Menu } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useDelete } from "@/hooks/useDelete";
@@ -8,6 +8,7 @@ import { useGallerySelection } from "@/hooks/useGallerySelection";
 import { useBulkTag } from "@/hooks/useBulkTag";
 import { useFolders } from "@/hooks/useFolders";
 import { useGalleryImages } from "@/hooks/useGalleryImages";
+import { useUpload } from "@/hooks/useUpload";
 import { searchSimilar } from "@/lib/api/search-similar";
 import ImageModal from "./ImageModal";
 import SimilarImagesDrawer from "./similar/SimilarImagesDrawer";
@@ -36,6 +37,8 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
   const [images, setImages] = useState<ImageItem[]>(initialImages);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isGridDragOver, setIsGridDragOver] = useState(false);
+  const dragDepthRef = useRef(0);
   const [sortOption, setSortOption] = useState<SortOption>("latest");
   const [randomOrderIds, setRandomOrderIds] = useState<string[] | null>(null);
   const [similarDrawerOpen, setSimilarDrawerOpen] = useState(false);
@@ -63,6 +66,7 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
 
   const { search, setSearch, filteredImages, setFilteredImages, isSearching, runSearch } = useSearch(baseImages);
   const { deleteImage } = useDelete(setFilteredImages);
+  const { uploadImages, isUploading } = useUpload();
 
   const sortedImages = useMemo(() => {
     if (sortOption === "oldest" || sortOption === "latest") {
@@ -198,6 +202,57 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
     [filteredImages]
   );
 
+  const handleGridDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (isUploading) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current += 1;
+    setIsGridDragOver(true);
+  }, [isUploading]);
+
+  const handleGridDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (isUploading) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+  }, [isUploading]);
+
+  const handleGridDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (isUploading) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsGridDragOver(false);
+  }, [isUploading]);
+
+  const handleGridDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      if (isUploading) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragDepthRef.current = 0;
+      setIsGridDragOver(false);
+
+      const files = Array.from(e.dataTransfer.files ?? []);
+      const imageFiles = files.filter(
+        (file) =>
+          file.type.startsWith("image/") ||
+          /\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(file.name)
+      );
+
+      if (imageFiles.length === 0) {
+        alert("이미지 파일만 드롭할 수 있습니다.");
+        return;
+      }
+
+      await uploadImages(imageFiles);
+    },
+    [isUploading, uploadImages]
+  );
+
   return (
     <div className="flex gap-6 w-full h-[calc(100vh-7.5rem)] min-h-0">
       <FolderSidebarLayout
@@ -263,7 +318,20 @@ export default function GalleryClient({ initialImages }: { initialImages: ImageI
           )}
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto flex justify-center">
+        <div
+          className="relative flex-1 min-h-0 overflow-y-auto flex justify-center"
+          onDragEnter={handleGridDragEnter}
+          onDragOver={handleGridDragOver}
+          onDragLeave={handleGridDragLeave}
+          onDrop={handleGridDrop}
+        >
+          {isGridDragOver && (
+            <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center rounded-xl border-2 border-dashed border-indigo-400/70 bg-indigo-500/20 backdrop-blur-sm">
+              <p className="rounded-full bg-black/50 px-4 py-2 text-sm font-medium text-white">
+                이미지를 여기에 드롭해서 업로드
+              </p>
+            </div>
+          )}
           <div className="w-full">
             <GalleryGrid
               images={sortedImages}
